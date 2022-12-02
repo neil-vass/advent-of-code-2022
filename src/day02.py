@@ -4,17 +4,16 @@ translate = {
     'X': 'Lose', 'Y': 'Draw', 'Z': 'Win'
 }
 
-def fetch_data(path):
-    with open(path, 'r') as f:
-        for ln in f:
-            yield [translate[c] for c in ln.split()]
-
-
 points_for = { 'Rock': 1, 'Paper': 2, 'Scissors': 3 }
 
 loses_to = { 'Rock': 'Scissors', 'Paper': 'Rock', 'Scissors': 'Paper' }
 wins_against = {v: k for k, v in loses_to.items()}
 
+
+def fetch_data(path):
+    with open(path, 'r') as f:
+        for ln in f:
+            yield [translate[c] for c in ln.split()]
 
 def score_for_round(their_play, i_should):
     if i_should == 'Lose':
@@ -31,7 +30,6 @@ def score_for_round(their_play, i_should):
     
 def score_for_strategy(data):
     return sum(score_for_round(*r) for r in data)
-
 
 
 #--------------------- tests -------------------------#

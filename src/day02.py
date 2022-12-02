@@ -1,29 +1,33 @@
+
+translate = { 
+    'A': 'Rock', 'B': 'Paper', 'C': 'Scissors',
+    'X': 'Lose', 'Y': 'Draw', 'Z': 'Win'
+}
+
 def fetch_data(path):
     with open(path, 'r') as f:
         for ln in f:
-            yield ln.split()
+            yield [translate[c] for c in ln.split()]
 
-# dictionary of {my_play: (scores, beats)}
-rules = {
-    'Rock': (1, 'Scissors'),
-    'Paper': (2, 'Rock'),
-    'Scissors': (3, 'Paper')
-}
 
-def translate(c):
-    if c in 'AX': return 'Rock'
-    elif c in 'BY': return 'Paper'
-    elif c in 'CZ': return 'Scissors'
+points_for = { 'Rock': 1, 'Paper': 2, 'Scissors': 3 }
 
-def score_for_round(their_play, my_play):
-    their_play, my_play = translate(their_play), translate(my_play)
-    score, my_play_beats = rules[my_play]
+loses_to = { 'Rock': 'Scissors', 'Paper': 'Rock', 'Scissors': 'Paper' }
+wins_against = {v: k for k, v in loses_to.items()}
 
-    if my_play_beats == their_play:
-        score += 6
-    elif my_play == their_play:
-        score += 3
-    return score
+
+def score_for_round(their_play, i_should):
+    if i_should == 'Lose':
+        my_play = loses_to[their_play]
+        score = 0
+    elif i_should == 'Draw':
+        my_play = their_play
+        score = 3
+    else:
+        my_play = wins_against[their_play]
+        score = 6
+
+    return score + points_for[my_play]
     
 def score_for_strategy(data):
     return sum(score_for_round(*r) for r in data)
@@ -33,13 +37,13 @@ def score_for_strategy(data):
 #--------------------- tests -------------------------#
 
 def test_score_for_round():
-    assert score_for_round('A', 'Y') == 8
-    assert score_for_round('B', 'X') == 1
-    assert score_for_round('C', 'Z') == 6
+    assert score_for_round(translate['A'], translate['Y']) == 4
+    assert score_for_round(translate['B'], translate['X']) == 1
+    assert score_for_round(translate['C'], translate['Z']) == 7
 
 def test_score_for_strategy():
     data = fetch_data('sample_data/day02.txt')
-    assert score_for_strategy(data) == 15
+    assert score_for_strategy(data) == 12
 
 #-----------------------------------------------------#
 

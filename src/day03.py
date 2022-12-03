@@ -28,7 +28,7 @@ def fetch_groups(path):
             return
 
 def priorty_of_badge(group):
-    badges = functools.reduce(set.intersection, (set(r) for r in group))
+    badges = functools.reduce(set.intersection, (set(rucksack) for rucksack in group))
     return sum(priority(b) for b in badges)
 
 #--------------------- tests -------------------------#

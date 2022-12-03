@@ -1,3 +1,6 @@
+import functools
+
+
 def fetch_data(path):
     with open(path, 'r') as f:
         for ln in f:
@@ -14,6 +17,19 @@ def priority_of_common_items(rucksack):
     halfway = len(rucksack) // 2
     common_items = set(rucksack[:halfway]).intersection(rucksack[halfway:])
     return sum(priority(c) for c in common_items)
+
+
+def fetch_groups(path):
+    rucksacks = fetch_data(path)
+    while True:
+        try:
+            yield [next(rucksacks) for _ in range(3)]
+        except StopIteration:
+            return
+
+def priorty_of_badge(group):
+    badges = functools.reduce(set.intersection, (set(r) for r in group))
+    return sum(priority(b) for b in badges)
 
 #--------------------- tests -------------------------#
 
@@ -32,8 +48,25 @@ def test_sum_priorities_for_rucksacks():
     data = fetch_data('sample_data/day03.txt')
     assert sum(priority_of_common_items(r) for r in data) == 157
 
+def test_fetch_groups():
+    groups = fetch_groups('sample_data/day03.txt')
+    assert next(groups) == [
+        'vJrwpWtwJgWrhcsFMMfFFhFp',
+        'jqHRNqRjqzjGDLGLrsFMfFZSrLrFZsSL',
+        'PmmdzqPrVvPwwTWBwg'
+    ]
+
+def test_priorty_of_badge():
+    groups = fetch_groups('sample_data/day03.txt')
+    assert priorty_of_badge(next(groups)) == 18
+    assert priorty_of_badge(next(groups)) == 52
+
+def test_sum_priorities_for_badges():
+    groups = fetch_groups('sample_data/day03.txt')
+    assert sum(priorty_of_badge(g) for g in groups) == 70
+
 #-----------------------------------------------------#
 
 if __name__ == "__main__":
-    data = fetch_data('data/day03.txt')
-    print(sum(priority_of_common_items(r) for r in data))
+    groups = fetch_groups('data/day03.txt')
+    print(sum(priorty_of_badge(g) for g in groups))

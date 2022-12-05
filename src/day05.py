@@ -18,7 +18,7 @@ def get_starting_stacks(data):
             for col, crate in get_cols_and_labels(ln):
                 starting_stacks[col].appendleft(crate)
         else:
-            # We're at the crate labels. Use these instead of col positons as dict keys.
+            # We're at the stack names. Use these instead of col positons as dict keys.
             for col, stack_name in get_cols_and_labels(ln):
                 starting_stacks[stack_name] = starting_stacks[col]
                 del starting_stacks[col]

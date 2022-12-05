@@ -33,12 +33,20 @@ def run_step(ln, stacks):
     for _ in range(int(num_crates)):
         stacks[to_stack].append(stacks[from_stack].pop())
 
+def run_step_part_2(ln, stacks):
+    num_crates, from_stack, to_stack = re.match(r'move (\d+) from (\d+) to (\d+)', ln).groups()
+    mover = deque()
+    for _ in range(int(num_crates)):
+        mover.append(stacks[from_stack].pop())
+    for _ in range(int(num_crates)):
+        stacks[to_stack].append(mover.pop())
 
-def get_stack_tops(data):
+
+def get_stack_tops(data, mover_fn=run_step):
     stacks = get_starting_stacks(data)
 
     for step in data:
-        run_step(step, stacks)
+        mover_fn(step, stacks)
 
     return ''.join(stack.pop() for stack in stacks.values()) 
 
@@ -69,6 +77,9 @@ def test_get_stack_tops():
     data = fetch_data('sample_data/day05.txt')
     assert get_stack_tops(data) == 'CMZ'
 
+def test_get_stack_tops_part_2():
+    data = fetch_data('sample_data/day05.txt')
+    assert get_stack_tops(data, run_step_part_2) == 'MCD'
 
 
 #-----------------------------------------------------#
@@ -76,3 +87,5 @@ def test_get_stack_tops():
 if __name__ == "__main__":
     data = fetch_data('data/day05.txt')
     print('Part 1: ' + get_stack_tops(data))
+    data = fetch_data('data/day05.txt')
+    print('Part 2: ' + get_stack_tops(data, run_step_part_2))

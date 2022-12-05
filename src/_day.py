@@ -6,9 +6,11 @@ def fetch_data(path):
 #--------------------- tests -------------------------#
 
 def test_basics():
-    assert 1 == 0
+    data = fetch_data('sample_data/day.txt')
+    assert data == 0
 
 #-----------------------------------------------------#
 
 if __name__ == "__main__":
+    data = fetch_data('data/day.txt')
     print('Hello, World!')

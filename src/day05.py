@@ -9,6 +9,7 @@ def fetch_data(path):
 def get_cols_and_crates(ln):
     return [(m.start(), m.group()) for m in re.finditer(r'\w', ln)]
 
+# Advances 'data' past the stack setup, leaves it ready to run steps.
 def get_starting_stacks(data):
     starting_stacks = defaultdict(deque)
     while True:
@@ -27,6 +28,20 @@ def get_starting_stacks(data):
             return starting_stacks
 
 
+def run_step(ln, stacks):
+    num_crates, from_stack, to_stack = re.match(r'move (\d+) from (\d+) to (\d+)', ln).groups()
+    for _ in range(int(num_crates)):
+        stacks[to_stack].append(stacks[from_stack].pop())
+
+
+def get_stack_tops(data):
+    stacks = get_starting_stacks(data)
+
+    for step in data:
+        run_step(step, stacks)
+
+    return ''.join(stack.pop() for stack in stacks.values()) 
+
 
 #--------------------- tests -------------------------#
 
@@ -42,8 +57,22 @@ def test_get_starting_stacks():
     assert list(stacks['1']) == ['Z', 'N']
     assert stacks['2'].pop() == 'D'
 
+def test_run_step():
+    data = fetch_data('sample_data/day05.txt')
+    stacks = get_starting_stacks(data)
+    run_step(next(data), stacks)
+    assert list(stacks['1']) == ['Z', 'N', 'D']
+    assert list(stacks['2']) == ['M', 'C']
+    assert list(stacks['3']) == ['P']
+
+def test_get_stack_tops():
+    data = fetch_data('sample_data/day05.txt')
+    assert get_stack_tops(data) == 'CMZ'
+
+
+
 #-----------------------------------------------------#
 
 if __name__ == "__main__":
     data = fetch_data('data/day05.txt')
-    print('Hello, World!')
+    print('Part 1: ' + get_stack_tops(data))

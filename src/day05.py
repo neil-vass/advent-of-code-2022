@@ -6,7 +6,7 @@ def fetch_data(path):
         for ln in f:
             yield ln
 
-def get_cols_and_crates(ln):
+def get_cols_and_labels(ln):
     return [(m.start(), m.group()) for m in re.finditer(r'\w', ln)]
 
 # Advances 'data' past the stack setup, leaves it ready to run steps.
@@ -15,11 +15,11 @@ def get_starting_stacks(data):
     while True:
         ln = next(data)
         if ln.lstrip()[0] == '[':
-            for col, crate in get_cols_and_crates(ln):
+            for col, crate in get_cols_and_labels(ln):
                 starting_stacks[col].appendleft(crate)
         else:
             # We're at the crate labels. Use these instead of col positons as dict keys.
-            for col, stack_name in get_cols_and_crates(ln):
+            for col, stack_name in get_cols_and_labels(ln):
                 starting_stacks[stack_name] = starting_stacks[col]
                 del starting_stacks[col]
             
@@ -32,6 +32,7 @@ def run_step(ln, stacks):
     num_crates, from_stack, to_stack = re.match(r'move (\d+) from (\d+) to (\d+)', ln).groups()
     for _ in range(int(num_crates)):
         stacks[to_stack].append(stacks[from_stack].pop())
+
 
 def run_step_part_2(ln, stacks):
     num_crates, from_stack, to_stack = re.match(r'move (\d+) from (\d+) to (\d+)', ln).groups()
@@ -55,8 +56,8 @@ def get_stack_tops(data, mover_fn=run_step):
 
 def test_get_crates_and_cols():
     data = fetch_data('sample_data/day05.txt')
-    assert get_cols_and_crates(next(data)) == [(5,'D')]
-    assert get_cols_and_crates(next(data)) == [(1,'N'),(5,'C')]
+    assert get_cols_and_labels(next(data)) == [(5,'D')]
+    assert get_cols_and_labels(next(data)) == [(1,'N'),(5,'C')]
 
 def test_get_starting_stacks():
     data = fetch_data('sample_data/day05.txt')

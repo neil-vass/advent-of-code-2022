@@ -56,13 +56,13 @@ def build_filesystem_from_terminal_output(data):
     for arg1, arg2 in data:
         if arg1 == 'cd':
             if not filesystem:
-                filesystem = cwd = Dir(arg2)
+                filesystem = cwd = Dir(name=arg2)
             else:
                 cwd = cwd.find(arg2) 
         elif arg1 == 'dir':
-            cwd.add(Dir(arg2))
+            cwd.add(Dir(name=arg2))
         else:
-            cwd.add(File(arg1, arg2))
+            cwd.add(File(size=arg1, name=arg2))
     return filesystem
 
 

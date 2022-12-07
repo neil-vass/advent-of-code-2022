@@ -5,8 +5,13 @@ class Dir:
         self.name = name
         self._contents = []
     
-    def size(self):
-        return sum(c.size() for c in self._contents)
+    def size(self, sizelist=None):
+        my_size = sum(c.size(sizelist) for c in self._contents)
+        
+        if sizelist is not None:
+            sizelist.append(my_size)
+        return my_size
+
 
     def add(self, child):
         child._parent = self
@@ -29,7 +34,7 @@ class File:
         self.name = name
         self._size = int(size)
 
-    def size(self):
+    def size(self, *ignored):
         return self._size
 
 
@@ -59,6 +64,15 @@ def build_filesystem_from_terminal_output(data):
         else:
             cwd.add(File(arg1, arg2))
     return filesystem
+
+
+def solve_part_one(data):
+    filesystem = build_filesystem_from_terminal_output(data)
+    sizelist = []
+    filesystem.size(sizelist)
+    return sum(s for s in sizelist if s <= 100000)
+
+
 
 #--------------------- tests -------------------------#
 
@@ -94,11 +108,19 @@ def test_build_filesystem_from_terminal_output():
     assert len(sut._contents) == 4
     assert sut.size() == 48381165
 
+def test_get_total_sizes():
+    data = fetch_data('sample_data/day07.txt')
+    sut = build_filesystem_from_terminal_output(data)
+    sizelist = []
+    sut.size(sizelist)
+    assert sizelist == [584, 94853, 24933642, 48381165]
 
-
+def test_solve_part_one():
+    data = fetch_data('sample_data/day07.txt')
+    assert solve_part_one(data) == 95437
 
 #-----------------------------------------------------#
 
 if __name__ == "__main__":
     data = fetch_data('data/day07.txt')
-    print('Hello, World!')
+    print(solve_part_one(data))

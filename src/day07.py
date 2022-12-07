@@ -72,7 +72,12 @@ def solve_part_one(data):
     filesystem.size(sizelist)
     return sum(s for s in sizelist if s <= 100000)
 
-
+def solve_part_two(data):
+    filesystem = build_filesystem_from_terminal_output(data)
+    sizelist = []
+    total_used_space = filesystem.size(sizelist)
+    space_needed = total_used_space - 40000000
+    return sorted(s for s in sizelist if s >= space_needed)[0]
 
 #--------------------- tests -------------------------#
 
@@ -119,8 +124,13 @@ def test_solve_part_one():
     data = fetch_data('sample_data/day07.txt')
     assert solve_part_one(data) == 95437
 
+def test_solve_part_two():
+    data = fetch_data('sample_data/day07.txt')
+    assert solve_part_two(data) == 24933642
+
 #-----------------------------------------------------#
 
 if __name__ == "__main__":
     data = fetch_data('data/day07.txt')
-    print(solve_part_one(data))
+    print(solve_part_two(data))
+    # 10618286 is too high. What's gone wrong?

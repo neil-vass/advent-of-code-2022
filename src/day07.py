@@ -133,4 +133,3 @@ def test_solve_part_two():
 if __name__ == "__main__":
     data = fetch_data('data/day07.txt')
     print(solve_part_two(data))
-    # 10618286 is too high. What's gone wrong?

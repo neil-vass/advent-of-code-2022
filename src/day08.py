@@ -20,7 +20,29 @@ def count_visible(data):
             count += is_visible(data, x, y)
     return count
 
+def count_trees(li, height_limit):
+    count = 0
+    for tree in li:
+        count += 1
+        if tree >= height_limit:
+            return count
+    return count
 
+def scenic_score(data, x, y):
+    my_height = data[x,y]
+    up = count_trees(data[:x,y][::-1], my_height)
+    left = count_trees(data[x,:y][::-1], my_height)
+    right = count_trees(data[x,y+1:], my_height)
+    down = count_trees(data[x+1:,y], my_height)
+    return up * left * right * down
+
+def max_scenic_score(data):
+    max_x, max_y = data.shape
+    best_seen = 0
+    for x in range(max_x):
+        for y in range(max_y):
+            best_seen = max(scenic_score(data, x, y), best_seen)
+    return best_seen
 
 #--------------------- tests -------------------------#
 
@@ -43,8 +65,17 @@ def test_count_visible():
     data = fetch_data('sample_data/day08.txt')
     assert count_visible(data) == 21
 
+def test_scenic_score():
+    data = fetch_data('sample_data/day08.txt')
+    assert scenic_score(data, 1, 2) == 4
+    assert scenic_score(data, 3, 2) == 8
+
+def test_max_scenic_score():
+    data = fetch_data('sample_data/day08.txt')
+    assert max_scenic_score(data) == 8
+
 #-----------------------------------------------------#
 
 if __name__ == "__main__":
     data = fetch_data('data/day08.txt')
-    print(count_visible(data))
+    print(max_scenic_score(data))

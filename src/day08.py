@@ -30,8 +30,8 @@ def count_trees(li, height_limit):
 
 def scenic_score(data, x, y):
     my_height = data[x,y]
-    up = count_trees(data[:x,y][::-1], my_height)
-    left = count_trees(data[x,:y][::-1], my_height)
+    up = count_trees(reversed(data[:x,y]), my_height)
+    left = count_trees(reversed(data[x,:y]), my_height)
     right = count_trees(data[x,y+1:], my_height)
     down = count_trees(data[x+1:,y], my_height)
     return up * left * right * down

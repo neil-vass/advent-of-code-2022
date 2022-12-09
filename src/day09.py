@@ -14,11 +14,13 @@ class Pos:
         if direction == 'R':
             return Pos(self.x, self.y+1)
 
+
 def fetch_data(path):
     with open(path, 'r') as f:
         for ln in f:
             direction, distance = ln.rstrip().split()
             yield direction, int(distance)
+
 
 def follow(leader, follower):
     if abs(leader.x - follower.x) > 1 or abs(leader.y - follower.y) > 1:
@@ -35,8 +37,7 @@ def follow(leader, follower):
 
 
 def track_visits(data):
-    head = Pos(0,0)
-    tail = Pos(0,0)
+    head = tail = Pos(0,0)
     visited = {(0,0)}
 
     for direction, distance in data:
@@ -48,7 +49,7 @@ def track_visits(data):
 
 
 def track_visits_part_2(data, knot_count):
-    knots = [Pos(0,0) for _ in range(knot_count)]
+    knots = [Pos(0,0)] * knot_count
     visited = {(0,0)}
 
     for direction, distance in data:

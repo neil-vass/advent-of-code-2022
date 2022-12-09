@@ -59,8 +59,7 @@ def track_visits_part_2(data, knot_count):
                 else:
                     new_position = knot.follow(knots[idx-1])
                 knots[idx] = new_position
-            tail = knots[-1]
-            visited.add((tail.x, tail.y))
+            visited.add((knots[-1].x, knots[-1].y))
     return visited
 
 #--------------------- tests -------------------------#

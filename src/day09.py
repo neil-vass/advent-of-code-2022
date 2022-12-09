@@ -20,18 +20,18 @@ def fetch_data(path):
             direction, distance = ln.rstrip().split()
             yield direction, int(distance)
 
-def follow(head, tail):
-    if abs(head.x - tail.x) > 1 or abs(head.y - tail.y) > 1:
-        if head.x > tail.x:
-            tail = tail.move('U')
-        elif head.x < tail.x:
-            tail = tail.move('D')
+def follow(leader, follower):
+    if abs(leader.x - follower.x) > 1 or abs(leader.y - follower.y) > 1:
+        if leader.x > follower.x:
+            follower = follower.move('U')
+        elif leader.x < follower.x:
+            follower = follower.move('D')
 
-        if head.y > tail.y:
-            tail = tail.move('R')
-        elif head.y < tail.y:
-            tail = tail.move('L')
-    return tail
+        if leader.y > follower.y:
+            follower = follower.move('R')
+        elif leader.y < follower.y:
+            follower = follower.move('L')
+    return follower
 
 
 def track_visits(data):
@@ -46,6 +46,23 @@ def track_visits(data):
             visited.add((tail.x, tail.y))
     return visited
 
+
+def track_visits_part_2(data, knot_count):
+    knots = [Pos(0,0) for _ in range(knot_count)]
+    visited = {(0,0)}
+
+    for direction, distance in data:
+        for _ in range(distance):
+            for idx, knot in enumerate(knots):
+                if idx == 0:
+                    new_position = knot.move(direction)
+                else:
+                    new_position = follow(knots[idx-1], knot)
+                knots[idx] = new_position
+            tail = knots[-1]
+            visited.add((tail.x, tail.y))
+    return visited
+
 #--------------------- tests -------------------------#
 
 def test_basics():
@@ -56,8 +73,17 @@ def test_track_visits():
     data = fetch_data('sample_data/day09.txt')
     assert len(track_visits(data)) == 13
 
+def test_track_visits_part_2_original_data():
+    data = fetch_data('sample_data/day09.txt')
+    assert len(track_visits_part_2(data, knot_count=2)) == 13
+    assert len(track_visits_part_2(data, knot_count=10)) == 1
+
+def test_track_visits_part_2_larger_example():
+    data = fetch_data('sample_data/day09-part2.txt')
+    assert len(track_visits_part_2(data, knot_count=10)) == 36
+
 #-----------------------------------------------------#
 
 if __name__ == "__main__":
     data = fetch_data('data/day09.txt')
-    print(len(track_visits(data)))
+    print(len(track_visits_part_2(data, knot_count=10)))

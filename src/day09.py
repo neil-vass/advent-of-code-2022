@@ -14,27 +14,26 @@ class Pos:
         if direction == 'R':
             return Pos(self.x, self.y+1)
 
+    def follow(self, leader):
+        follower = self
+        if abs(leader.x - follower.x) > 1 or abs(leader.y - follower.y) > 1:
+            if leader.x > follower.x:
+                follower = follower.move('U')
+            elif leader.x < follower.x:
+                follower = follower.move('D')
+
+            if leader.y > follower.y:
+                follower = follower.move('R')
+            elif leader.y < follower.y:
+                follower = follower.move('L')
+        return follower
+
 
 def fetch_data(path):
     with open(path, 'r') as f:
         for ln in f:
             direction, distance = ln.rstrip().split()
             yield direction, int(distance)
-
-
-def follow(leader, follower):
-    if abs(leader.x - follower.x) > 1 or abs(leader.y - follower.y) > 1:
-        if leader.x > follower.x:
-            follower = follower.move('U')
-        elif leader.x < follower.x:
-            follower = follower.move('D')
-
-        if leader.y > follower.y:
-            follower = follower.move('R')
-        elif leader.y < follower.y:
-            follower = follower.move('L')
-    return follower
-
 
 def track_visits(data):
     head = tail = Pos(0,0)
@@ -43,7 +42,7 @@ def track_visits(data):
     for direction, distance in data:
         for _ in range(distance):
             head = head.move(direction)
-            tail = follow(head, tail)
+            tail = tail.follow(head)
             visited.add((tail.x, tail.y))
     return visited
 
@@ -58,7 +57,7 @@ def track_visits_part_2(data, knot_count):
                 if idx == 0:
                     new_position = knot.move(direction)
                 else:
-                    new_position = follow(knots[idx-1], knot)
+                    new_position = knot.follow(knots[idx-1])
                 knots[idx] = new_position
             tail = knots[-1]
             visited.add((tail.x, tail.y))

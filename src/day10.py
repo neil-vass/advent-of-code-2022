@@ -23,8 +23,7 @@ def get_signal_strengths(data):
     for cycle in range(220):
         register = next(register_vals)
         if cycle+1 in sample_during:
-            strength = (cycle+1) * register
-            signal_strengths.append(strength)
+            signal_strengths.append((cycle+1) * register)
     return signal_strengths
 
 
@@ -37,11 +36,9 @@ def draw_crt(data):
             yield row
             draw_pos = 0
             row = ''
-        
         reg = next(register_vals)
         row += '#' if (abs(reg - draw_pos) <= 1) else '.'
         draw_pos += 1
-
 
 
 #--------------------- tests -------------------------#
@@ -64,8 +61,7 @@ def test_larger_program():
 
 def test_draw_crt():
     data = fetch_data('sample_data/day10.txt')
-    rows = draw_crt(data)
-    assert list(rows) == [
+    assert list(draw_crt(data)) == [
         '##..##..##..##..##..##..##..##..##..##..',
         '###...###...###...###...###...###...###.',
         '####....####....####....####....####....',

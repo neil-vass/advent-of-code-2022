@@ -1,19 +1,19 @@
 def fetch_data(path):
     with open(path, 'r') as f:
         for ln in f:
+            # each instruction gives (cycles to wait, value to add)
             vals = ln.rstrip().split()
             if vals[0] == 'noop':
-                yield 'noop', None, 1
+                yield 1, 0
             else:
-                yield 'addx', int(vals[1]), 2
+                yield 2, int(vals[1])
 
 def execute(data):
     X = 1
-    for op, arg, cycles in data:
+    for cycles, val in data:
         for _ in range(cycles):
             yield X
-        if op == 'addx':
-            X += arg
+        X += val
     yield X
            
 def get_signal_strengths(data):
@@ -45,9 +45,12 @@ def draw_crt(data):
 
 def test_basics():
     data = fetch_data('sample_data/day10-small.txt')
-    assert next(data) == ('noop', None, 1)
-    assert next(data) == ('addx', 3, 2)
-    assert next(data) == ('addx', -5, 2)
+    # 'noop': take 1 cycle, add nothing
+    assert next(data) == (1, 0)
+    # 'addx 3': take 2 cycles, add 3
+    assert next(data) == (2, 3)
+    # 'addx -5'
+    assert next(data) == (2, -5)
 
 def test_small_program():
     data = fetch_data('sample_data/day10-small.txt')

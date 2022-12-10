@@ -17,16 +17,30 @@ def execute(data):
     yield X
            
 def get_signal_strengths(data):
-    system = execute(data)
+    register_vals = execute(data)
     sample_during = [20, 60, 100, 140, 180, 220]
     signal_strengths = []
     for cycle in range(220):
-        register = next(system)
+        register = next(register_vals)
         if cycle+1 in sample_during:
             strength = (cycle+1) * register
             signal_strengths.append(strength)
     return signal_strengths
 
+
+def draw_crt(data):
+    draw_pos = 0
+    row = ''
+    register_vals = execute(data)
+    for _ in range(241):
+        if len(row) == 40:
+            yield row
+            draw_pos = 0
+            row = ''
+        
+        reg = next(register_vals)
+        row += '#' if (abs(reg - draw_pos) <= 1) else '.'
+        draw_pos += 1
 
 
 
@@ -48,8 +62,21 @@ def test_larger_program():
     assert signal_strengths == [420, 1140, 1800, 2940, 2880, 3960]
     assert sum(signal_strengths) == 13140
 
+def test_draw_crt():
+    data = fetch_data('sample_data/day10.txt')
+    rows = draw_crt(data)
+    assert list(rows) == [
+        '##..##..##..##..##..##..##..##..##..##..',
+        '###...###...###...###...###...###...###.',
+        '####....####....####....####....####....',
+        '#####.....#####.....#####.....#####.....',
+        '######......######......######......####',
+        '#######.......#######.......#######.....']
+
+
 #-----------------------------------------------------#
 
 if __name__ == "__main__":
     data = fetch_data('data/day10.txt')
-    print(sum(get_signal_strengths(data)))
+    for row in draw_crt(data):
+        print(row)

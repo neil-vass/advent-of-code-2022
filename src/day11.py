@@ -1,21 +1,15 @@
+from functools import reduce
 import re
 import operator
 
-def manage_worry_part_1(item):
-    return item // 3
-
-def manage_worry_part_2(item):
-    return item
-
-
 class Monkey:
-    def __init__(self, items, op, test_div, on_true, on_false, worry_manager=manage_worry_part_1):
+    def __init__(self, items, op, test_div, on_true, on_false):
         self.items = [int(i) for i in items]
         self.inspect = Monkey.create_operation(*op)
         self.test_div = int(test_div)
         self.on_true =  int(on_true)
         self.on_false =  int(on_false)
-        self.manage_worry = worry_manager
+        self.manage_worry = lambda x: x // 3
         self.inspections = 0
 
     def create_operation(symbol, argument):
@@ -40,7 +34,6 @@ class Monkey:
     def catch(self, item):
         self.items.append(item)
 
-
 def fetch_monkeys(path):
     pack = []
     with open(path, 'r') as f:
@@ -64,6 +57,13 @@ def find_active_monkeys(pack, rounds):
     for _ in range(rounds):
         play_round(pack)
     return sorted(m.inspections for m in pack)[-2:]
+
+
+def manage_worries_for_part_2(monkeys):
+    common_divisor = reduce(operator.mul, (m.test_div for m in monkeys))
+    worry_manager = lambda x: x % common_divisor
+    for m in monkeys:
+        m.manage_worry = worry_manager
 
 #--------------------- tests -------------------------#
 
@@ -105,8 +105,7 @@ def test_find_active_monkeys():
 
 def test_part_2_early_rounds():
     pack = fetch_monkeys('sample_data/day11.txt')
-    for monkey in pack:
-        monkey.manage_worry = manage_worry_part_2
+    manage_worries_for_part_2(pack)
     play_round(pack)
     assert pack[0].inspections == 2
     assert pack[1].inspections == 4  
@@ -117,14 +116,13 @@ def test_part_2_early_rounds():
 
 def test_part_2_all_rounds():
     pack = fetch_monkeys('sample_data/day11.txt')
-    for monkey in pack:
-        monkey.manage_worry = manage_worry_part_2
-    pass
-    assert find_active_monkeys(pack, rounds=10000) == [52166, 52013]
+    manage_worries_for_part_2(pack)
+    assert find_active_monkeys(pack, rounds=10000) == [52013, 52166]
 
 
 #-----------------------------------------------------#
 
 if __name__ == "__main__":
     pack = fetch_monkeys('data/day11.txt')
-    print(operator.mul(*find_active_monkeys(pack, rounds=20)))
+    manage_worries_for_part_2(pack)
+    print(operator.mul(*find_active_monkeys(pack, rounds=10000)))

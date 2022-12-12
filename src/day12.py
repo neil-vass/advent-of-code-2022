@@ -22,7 +22,7 @@ class Heightmap:
             neighbours.append(Pos(explore_from.x, explore_from.y +1))
 
         for n in neighbours:
-            if 0 <= self.grid[n] <= self.grid[explore_from] + 1:
+            if self.grid[n] <= self.grid[explore_from] + 1:
                 yield n
 
 

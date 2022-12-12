@@ -2,24 +2,24 @@ import numpy as np
 from collections import namedtuple
 from collections import deque
 
-class Heightmap:
-    Pos = namedtuple("Pos", "x y")
+Pos = namedtuple("Pos", "x y")
 
+class Heightmap:
     def __init__(self, grid, start, target):
         self.grid = np.array(grid)
-        self.start = Heightmap.Pos(*start)
-        self.target = Heightmap.Pos(*target)
+        self.start = Pos(*start)
+        self.target = Pos(*target)
 
     def can_move_to(self, explore_from):
         neighbours = []
         if explore_from.x > 0:
-            neighbours.append(Heightmap.Pos(explore_from.x -1, explore_from.y))
+            neighbours.append(Pos(explore_from.x -1, explore_from.y))
         if explore_from.x < (self.grid.shape[0] -1):
-            neighbours.append(Heightmap.Pos(explore_from.x +1, explore_from.y))
+            neighbours.append(Pos(explore_from.x +1, explore_from.y))
         if explore_from.y > 0:
-            neighbours.append(Heightmap.Pos(explore_from.x, explore_from.y -1))
+            neighbours.append(Pos(explore_from.x, explore_from.y -1))
         if explore_from.y < (self.grid.shape[1] -1):
-            neighbours.append(Heightmap.Pos(explore_from.x, explore_from.y +1))
+            neighbours.append(Pos(explore_from.x, explore_from.y +1))
 
         for n in neighbours:
             if 0 <= self.grid[n] <= self.grid[explore_from] + 1:
@@ -50,7 +50,7 @@ class Heightmap:
 
     def shortest_path_from_all_a(self):
         possible_starts = zip(*np.where(self.grid == ord('a')))
-        return min(self.shortest_path(starting_point=Heightmap.Pos(x,y)) for x, y in possible_starts)
+        return min(self.shortest_path(starting_point=Pos(x,y)) for x, y in possible_starts)
 
 
 def fetch_data(path):
@@ -80,7 +80,7 @@ def test_basics():
 
 def test_can_move_to():
     heightmap = fetch_data('sample_data/day12.txt')
-    assert list(heightmap.can_move_to(explore_from=Heightmap.Pos(0,0))) == [(1,0),(0,1)]
+    assert list(heightmap.can_move_to(explore_from=Pos(0,0))) == [(1,0),(0,1)]
     assert len(list(heightmap.can_move_to(explore_from=heightmap.target))) == 4
 
 

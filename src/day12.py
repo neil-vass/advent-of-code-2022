@@ -25,25 +25,35 @@ class Heightmap:
             if 0 <= self.grid[n] <= self.grid[explore_from] + 1:
                 yield n
 
-    def shortest_path(self):
-        node, path_length = self._depth_first_search()
-        return path_length
 
-    def _depth_first_search(self):
-        explored = set()
-        Q = deque()
-        explored.add(self.start)
-        Q.append((self.start, 0))
-        while len(Q):
-            v, path_length = Q.popleft()
+    # Returns length of shortest path from starting point to target, 
+    # or None if there's no way to get to the target.
+    def shortest_path(self, starting_point=None):
+        if starting_point is None:
+            starting_point = self.start
+        
+        path = self._depth_first_search(starting_point)
+        return path[1] if path else None
+
+
+    def _depth_first_search(self, starting_point):
+        explored = {starting_point}
+        queue = deque([(starting_point, 0)])
+        while queue:
+            v, path_length = queue.popleft()
             if v == self.target:
                 return v, path_length
             for neighbour in self.can_move_to(explore_from=v):
                 if neighbour not in explored:
                     explored.add(neighbour)
-                    Q.append((neighbour, path_length+1))
+                    queue.append((neighbour, path_length+1))
 
-    
+
+    def shortest_path_from_all_a(self):
+        possible_starts = zip(*np.where(self.grid == ord('a')))
+        paths = [self.shortest_path(starting_point=Heightmap.Pos(x,y)) for x, y in possible_starts]
+        return min(p for p in paths if p is not None)
+
 
 def fetch_data(path):
     with open(path, 'r') as f:
@@ -92,9 +102,13 @@ def test_find_shortest_path():
     heightmap = fetch_data('sample_data/day12.txt')
     assert heightmap.shortest_path() == 31
 
+def test_shortest_path_from_all_a():
+    heightmap = fetch_data('sample_data/day12.txt')
+    assert heightmap.shortest_path_from_all_a() == 29
+
 
 #-----------------------------------------------------#
 
 if __name__ == "__main__":
     heightmap = fetch_data('data/day12.txt')
-    print(heightmap.shortest_path())
+    print(heightmap.shortest_path_from_all_a())

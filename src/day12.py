@@ -25,26 +25,7 @@ class Heightmap:
             if 0 <= self.grid[n] <= self.grid[explore_from] + 1:
                 yield n
 
-
     def shortest_path(self):
-        return len(self._explore(self.start, [])) -1
-
-    def _explore(self, explore_from, path_so_far):
-        choices = []
-        path_to_here = path_so_far + [explore_from]
-        for neighbour in self.can_move_to(explore_from):
-            if neighbour == self.target:
-                return path_to_here + [neighbour]
-            elif neighbour not in path_so_far:
-                route_to_target = self._explore(neighbour, path_to_here)
-                if route_to_target:
-                    choices.append(route_to_target)
-        if choices:
-            return min(choices, key=len)
-        else:
-            return []
-
-    def shortest_path_sooner(self):
         node, parent = self._depth_first_search()
         length = 0
         
@@ -102,7 +83,7 @@ def test_can_move_to():
 
 def test_shortest_path_straight():
     heightmap = Heightmap(grid=[[0,0,1]], start=(0,0), target=(0,2))
-    assert heightmap.shortest_path_sooner() == 2
+    assert heightmap.shortest_path() == 2
 
 def test_shortest_path_avoid_loops():
     grid = [
@@ -110,15 +91,15 @@ def test_shortest_path_avoid_loops():
         [0, 0, 1]
     ]
     heightmap = Heightmap(grid, start=(0,0), target=(1,2))
-    assert heightmap.shortest_path_sooner() == 3
+    assert heightmap.shortest_path() == 3
 
 def test_find_shortest_path():
     heightmap = fetch_data('sample_data/day12.txt')
-    assert heightmap.shortest_path_sooner() == 31
+    assert heightmap.shortest_path() == 31
 
 
 #-----------------------------------------------------#
 
 if __name__ == "__main__":
     heightmap = fetch_data('data/day12.txt')
-    print(heightmap.shortest_path_sooner())
+    print(heightmap.shortest_path())

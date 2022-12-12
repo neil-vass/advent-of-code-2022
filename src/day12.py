@@ -26,27 +26,22 @@ class Heightmap:
                 yield n
 
     def shortest_path(self):
-        node, parent = self._depth_first_search()
-        length = 0
-        
-        while parent:
-            length += 1
-            node, parent = parent
-        return length
+        node, path_length = self._depth_first_search()
+        return path_length
 
     def _depth_first_search(self):
         explored = set()
         Q = deque()
         explored.add(self.start)
-        Q.append((self.start, None))
+        Q.append((self.start, 0))
         while len(Q):
-            v, parent = Q.popleft()
+            v, path_length = Q.popleft()
             if v == self.target:
-                return v, parent
+                return v, path_length
             for neighbour in self.can_move_to(explore_from=v):
                 if neighbour not in explored:
                     explored.add(neighbour)
-                    Q.append((neighbour, (v, parent)))
+                    Q.append((neighbour, path_length+1))
 
     
 

@@ -27,13 +27,12 @@ class Heightmap:
 
 
     # Returns length of shortest path from starting point to target, 
-    # or None if there's no way to get to the target.
+    # or infinity if there's no way to get to the target.
     def shortest_path(self, starting_point=None):
         if starting_point is None:
-            starting_point = self.start
-        
-        path = self._depth_first_search(starting_point)
-        return path[1] if path else None
+            starting_point = self.start   
+        path_length = self._depth_first_search(starting_point)
+        return path_length
 
 
     def _depth_first_search(self, starting_point):
@@ -42,17 +41,16 @@ class Heightmap:
         while queue:
             v, path_length = queue.popleft()
             if v == self.target:
-                return v, path_length
+                return path_length
             for neighbour in self.can_move_to(explore_from=v):
                 if neighbour not in explored:
                     explored.add(neighbour)
                     queue.append((neighbour, path_length+1))
-
+        return np.inf
 
     def shortest_path_from_all_a(self):
         possible_starts = zip(*np.where(self.grid == ord('a')))
-        paths = [self.shortest_path(starting_point=Heightmap.Pos(x,y)) for x, y in possible_starts]
-        return min(p for p in paths if p is not None)
+        return min(self.shortest_path(starting_point=Heightmap.Pos(x,y)) for x, y in possible_starts)
 
 
 def fetch_data(path):

@@ -20,11 +20,11 @@ class Cave:
 
     def add_sand(self, x, y):
         while y < self._furthest_sand_can_fall:
-            if (x, y+1) not in self._content:
+            if self(x, y+1) == 'air':
                 x, y = x, y+1
-            elif (x-1, y+1) not in self._content:
+            elif self(x-1, y+1) == 'air':
                 x, y = x-1, y+1
-            elif (x+1, y+1) not in self._content:
+            elif self(x+1, y+1) == 'air':
                 x, y = x+1, y+1
             else:
                 break

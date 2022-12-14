@@ -31,7 +31,7 @@ class Cave:
         self._content[(x, y)] = 'sand'
         return x, y
 
-    def add_sand_until_flowing(self):
+    def add_sand_until_stop(self):
         units = 1
         while self.add_sand(500, 0) != (500, 0):
             units += 1
@@ -79,13 +79,13 @@ def test_add_sand():
     assert cave.add_sand(500, 0) is not None
     assert cave(499, 8) == 'sand'
 
-def test_add_sand_until_flowing():
+def test_add_sand_until_stop():
     cave = fetch_data('sample_data/day14.txt')
-    assert cave.add_sand_until_flowing() == 93
+    assert cave.add_sand_until_stop() == 93
 
 
 #-----------------------------------------------------#
 
 if __name__ == "__main__":
     cave = fetch_data('data/day14.txt')
-    print(cave.add_sand_until_flowing())
+    print(cave.add_sand_until_stop())

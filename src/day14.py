@@ -2,7 +2,7 @@
 class Cave:
     def __init__(self):
         self._content = dict()
-        self._start_of_void = 0
+        self._furthest_sand_can_fall = 0
 
     def add_rocks(self, from_x, from_y, to_x, to_y):
         start_x = min(from_x, to_x)
@@ -15,11 +15,11 @@ class Cave:
         for y in range(start_y, end_y):
             self._content[(from_x, y)] = 'rock'
 
-        self._start_of_void = max(self._start_of_void, end_y)
+        self._furthest_sand_can_fall = max(self._furthest_sand_can_fall, end_y)
 
 
     def add_sand(self, x, y):
-        while y <= self._start_of_void:
+        while y < self._furthest_sand_can_fall:
             if (x, y+1) not in self._content:
                 x, y = x, y+1
             elif (x-1, y+1) not in self._content:
@@ -27,13 +27,13 @@ class Cave:
             elif (x+1, y+1) not in self._content:
                 x, y = x+1, y+1
             else:
-                self._content[(x, y)] = 'sand'
-                return x, y
-        return None
+                break
+        self._content[(x, y)] = 'sand'
+        return x, y
 
     def add_sand_until_flowing(self):
-        units = 0
-        while self.add_sand(500, 0):
+        units = 1
+        while self.add_sand(500, 0) != (500, 0):
             units += 1
         return units
 
@@ -81,7 +81,7 @@ def test_add_sand():
 
 def test_add_sand_until_flowing():
     cave = fetch_data('sample_data/day14.txt')
-    assert cave.add_sand_until_flowing() == 24
+    assert cave.add_sand_until_flowing() == 93
 
 
 #-----------------------------------------------------#

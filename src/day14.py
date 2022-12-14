@@ -1,0 +1,57 @@
+
+class Cave:
+    def __init__(self):
+        self._content = dict()
+
+    def add_rocks(self, from_x, from_y, to_x, to_y):
+        start_x = min(from_x, to_x)
+        end_x = max(from_x+1, to_x+1)
+        for x in range(start_x, end_x):
+            self._content[(x, from_y)] = 'rock'
+
+        start_y = min(from_y, to_y)
+        end_y = max(from_y+1, to_y+1)
+        for y in range(start_y, end_y):
+            self._content[(from_x, y)] = 'rock'
+
+    def __call__(self, x, y):
+        return self._content.get((x,y), 'air')
+
+
+def fetch_data(path):
+    cave = Cave()
+    with open(path, 'r') as f:
+        for ln in f:
+            from_x = from_y = None
+            for token in ln.split():
+                if token == '->':
+                    continue
+                to_x, to_y = [int(n) for n in token.split(',')]
+                if from_x is not None:
+                    cave.add_rocks(from_x, from_y, to_x, to_y)
+                from_x, from_y = to_x, to_y
+    return cave
+    
+
+#--------------------- tests -------------------------#
+
+def test_cave_creation():
+    cave = Cave()
+    cave.add_rocks(498, 4, 498, 6)
+    assert cave(494,0) == 'air'
+    assert cave(498,4) == 'rock'
+
+def test_fetch_data():
+    cave = fetch_data('sample_data/day14.txt')
+    assert cave(494,0) == 'air'
+    assert cave(498,4) == 'rock'
+    assert cave(495, 6) == 'air'
+    assert cave(496, 6) == 'rock'
+
+
+
+#-----------------------------------------------------#
+
+if __name__ == "__main__":
+    data = fetch_data('data/day14.txt')
+    print('Hello, World!')

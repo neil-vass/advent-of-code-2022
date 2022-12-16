@@ -1,3 +1,4 @@
+import re
 
 class Sensor:
     def __init__(self, sensor_x, sensor_y, beacon_x, beacon_y):
@@ -20,12 +21,23 @@ class Sensor:
                 positions -= {self.position, self.closest_beacon}
                 no_beacons += list(positions)
         return no_beacons
-        
+
 
 def fetch_data(path):
     with open(path, 'r') as f:
+        sensors = []
         for ln in f:
-            yield ln
+            values = [int(n) for n in re.findall(r'-?\d+', ln)]
+            sensors.append(Sensor(*values))
+        return sensors
+
+def count_no_beacon_positions_for_row(sensors, row):
+    positions = set()
+    for sensor in sensors:
+        positions |= {(x,y) for x,y in sensor.cannot_be_beacons() if y == row}
+    return len(positions)
+
+
 
 #--------------------- tests -------------------------#
 
@@ -34,18 +46,23 @@ def test_sensor_init():
     assert sensor.position == (2, 18)
     assert sensor.closest_beacon == (-2, 15)
 
-def testest_cannot_be_beacons():
-    sensor = Sensor(0,0, 0,1)
-    no_beacons = sensor.cannot_be_beacons()
-    assert len(no_beacons) == 3
-
-def test_cannot_be_beacons_8_7():
+def test_cannot_be_beacons():
     sensor = Sensor(8,7, 2,10)
     no_beacons = sensor.cannot_be_beacons()
     assert (8,-2) in no_beacons
 
+def test_fetch_data():
+    sensors = fetch_data('sample_data/day15.txt')
+    assert len(sensors) == 14
+    assert sensors[0].position == (2,18)
+    assert sensors[-1].closest_beacon == (15,3)
+
+def test_count_no_beacon_positions_for_row():
+    sensors = fetch_data('sample_data/day15.txt')
+    assert count_no_beacon_positions_for_row(sensors, row=10) == 26
+
 #-----------------------------------------------------#
 
 if __name__ == "__main__":
-    data = fetch_data('data/day.txt')
-    print('Hello, World!')
+    sensors = fetch_data('data/day15.txt')
+    print(count_no_beacon_positions_for_row(sensors, row=2000000))

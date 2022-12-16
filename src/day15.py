@@ -22,6 +22,19 @@ class Sensor:
                 no_beacons += list(positions)
         return no_beacons
 
+    def cannot_be_beacons_for_row(self, row):
+        sensor_x, sensor_y = self.position
+        dist_to_beacon = (abs(sensor_x - self.closest_beacon[0]) + 
+                abs(sensor_y - self.closest_beacon[1]))
+
+        dist_to_target_row = abs(sensor_y - row)
+
+        no_beacons = set()
+        for x in range(dist_to_beacon - dist_to_target_row + 1):
+            no_beacons |= {(sensor_x + x, row), (sensor_x - x, row)}
+
+        return no_beacons - {self.position, self.closest_beacon}
+
 
 def fetch_data(path):
     with open(path, 'r') as f:
@@ -34,7 +47,7 @@ def fetch_data(path):
 def count_no_beacon_positions_for_row(sensors, row):
     positions = set()
     for sensor in sensors:
-        positions |= {(x,y) for x,y in sensor.cannot_be_beacons() if y == row}
+        positions |= sensor.cannot_be_beacons_for_row(row)
     return len(positions)
 
 
@@ -50,6 +63,11 @@ def test_cannot_be_beacons():
     sensor = Sensor(8,7, 2,10)
     no_beacons = sensor.cannot_be_beacons()
     assert (8,-2) in no_beacons
+
+def test_cannot_be_beacons_for_row():
+    sensor = Sensor(8,7, 2,10)
+    no_beacons = sensor.cannot_be_beacons_for_row(10)
+    assert len(no_beacons) == 12
 
 def test_fetch_data():
     sensors = fetch_data('sample_data/day15.txt')

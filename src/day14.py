@@ -46,9 +46,7 @@ def fetch_data(path):
     with open(path, 'r') as f:
         for ln in f:
             from_x = from_y = None
-            for token in ln.split():
-                if token == '->':
-                    continue
+            for token in ln.split(' -> '):
                 to_x, to_y = [int(n) for n in token.split(',')]
                 if from_x is not None:
                     cave.add_rocks(from_x, from_y, to_x, to_y)

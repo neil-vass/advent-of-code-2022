@@ -5,23 +5,6 @@ class Sensor:
         self.position = (sensor_x, sensor_y)
         self.closest_beacon = (beacon_x, beacon_y)
 
-    def cannot_be_beacons(self):
-        sensor_x, sensor_y = self.position
-        dist_to_beacon = (abs(sensor_x - self.closest_beacon[0]) + 
-                abs(sensor_y - self.closest_beacon[1]))
-        
-        no_beacons = []
-        for x in range(dist_to_beacon+1):
-            for y in range(dist_to_beacon+1 -x):
-                positions = {
-                    (sensor_x + x, sensor_y + y),
-                    (sensor_x + x, sensor_y - y),
-                    (sensor_x - x, sensor_y - y),
-                    (sensor_x - x, sensor_y + y)} 
-                positions -= {self.position, self.closest_beacon}
-                no_beacons += list(positions)
-        return no_beacons
-
     def cannot_be_beacons_for_row(self, row):
         sensor_x, sensor_y = self.position
         dist_to_beacon = (abs(sensor_x - self.closest_beacon[0]) + 
@@ -34,6 +17,16 @@ class Sensor:
             no_beacons |= {(sensor_x + x, row), (sensor_x - x, row)}
 
         return no_beacons - {self.position, self.closest_beacon}
+
+
+    def rule_out(self, possible_locations):
+        sensor_x, sensor_y = self.position
+        dist_to_beacon = (abs(sensor_x - self.closest_beacon[0]) + 
+                abs(sensor_y - self.closest_beacon[1]))
+
+        return {(x,y) for x,y in possible_locations 
+                if (abs(sensor_x - x) + abs(sensor_y - y)) > dist_to_beacon}
+    
 
 
 def fetch_data(path):
@@ -50,6 +43,12 @@ def count_no_beacon_positions_for_row(sensors, row):
         positions |= sensor.cannot_be_beacons_for_row(row)
     return len(positions)
 
+def find_distress_beacon(sensors, max_x, max_y):
+   
+    possible_locations = {(x,y) for x in range(max_x+1) for y in range(max_y+1)}
+    for sensor in sensors:
+        possible_locations = sensor.rule_out(possible_locations)
+    return list(possible_locations)[0]
 
 
 #--------------------- tests -------------------------#
@@ -58,11 +57,6 @@ def test_sensor_init():
     sensor = Sensor(2,18, -2,15)
     assert sensor.position == (2, 18)
     assert sensor.closest_beacon == (-2, 15)
-
-def test_cannot_be_beacons():
-    sensor = Sensor(8,7, 2,10)
-    no_beacons = sensor.cannot_be_beacons()
-    assert (8,-2) in no_beacons
 
 def test_cannot_be_beacons_for_row():
     sensor = Sensor(8,7, 2,10)
@@ -79,8 +73,18 @@ def test_count_no_beacon_positions_for_row():
     sensors = fetch_data('sample_data/day15.txt')
     assert count_no_beacon_positions_for_row(sensors, row=10) == 26
 
+def test_rule_out():
+    sensor = Sensor(0,0, 1,0)
+    max_x = max_y = 1
+    possible_locations = {(x,y) for x in range(max_x+1) for y in range(max_y+1)}
+    assert sensor.rule_out(possible_locations) == {(1,1)}
+
+def test_find_distress_beacon():
+    sensors = fetch_data('sample_data/day15.txt')
+    assert find_distress_beacon(sensors, 20, 20) == (14, 11)
+
 #-----------------------------------------------------#
 
 if __name__ == "__main__":
     sensors = fetch_data('data/day15.txt')
-    print(count_no_beacon_positions_for_row(sensors, row=2000000))
+    print(find_distress_beacon(sensors, 4000000, 4000000))

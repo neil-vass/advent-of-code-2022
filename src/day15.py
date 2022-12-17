@@ -1,32 +1,28 @@
 import re
+from tqdm import tqdm
 
 class Sensor:
     def __init__(self, sensor_x, sensor_y, beacon_x, beacon_y):
         self.position = (sensor_x, sensor_y)
         self.closest_beacon = (beacon_x, beacon_y)
+        self._dist_to_beacon = (abs(sensor_x - beacon_x) + abs(sensor_y - beacon_y))
 
     def cannot_be_beacons_for_row(self, row):
         sensor_x, sensor_y = self.position
-        dist_to_beacon = (abs(sensor_x - self.closest_beacon[0]) + 
-                abs(sensor_y - self.closest_beacon[1]))
-
         dist_to_target_row = abs(sensor_y - row)
 
         no_beacons = set()
-        for x in range(dist_to_beacon - dist_to_target_row + 1):
+        for x in range(self._dist_to_beacon - dist_to_target_row + 1):
             no_beacons |= {(sensor_x + x, row), (sensor_x - x, row)}
 
         return no_beacons - {self.position, self.closest_beacon}
 
-
-    def rule_out(self, possible_locations):
+    def no_beacons_range_for_row(self, row):
         sensor_x, sensor_y = self.position
-        dist_to_beacon = (abs(sensor_x - self.closest_beacon[0]) + 
-                abs(sensor_y - self.closest_beacon[1]))
-
-        return {(x,y) for x,y in possible_locations 
-                if (abs(sensor_x - x) + abs(sensor_y - y)) > dist_to_beacon}
-    
+        dist_to_target_row = abs(sensor_y - row)
+        x_extent = self._dist_to_beacon - dist_to_target_row
+        if x_extent >= 0:
+            return (sensor_x - x_extent), (sensor_x + x_extent)
 
 
 def fetch_data(path):
@@ -37,18 +33,30 @@ def fetch_data(path):
             sensors.append(Sensor(*values))
         return sensors
 
+
 def count_no_beacon_positions_for_row(sensors, row):
     positions = set()
     for sensor in sensors:
         positions |= sensor.cannot_be_beacons_for_row(row)
     return len(positions)
 
+
 def find_distress_beacon(sensors, max_x, max_y):
-   
-    possible_locations = {(x,y) for x in range(max_x+1) for y in range(max_y+1)}
-    for sensor in sensors:
-        possible_locations = sensor.rule_out(possible_locations)
-    return list(possible_locations)[0]
+    for y in tqdm(range(max_y+1)):
+        ranges = (sensor.no_beacons_range_for_row(y) for sensor in sensors)
+        ranges = sorted(r for r in ranges if r is not None)
+
+        left_edge = right_edge = None
+        for left_for_this_sensor, right_for_this_sensor in ranges:
+            if left_edge is None:
+                left_edge, right_edge = left_for_this_sensor, right_for_this_sensor
+            else:
+                if (right_edge +1) < left_for_this_sensor <= max_x:
+                    return right_edge +1, y
+                else:
+                    right_edge = max(right_edge, right_for_this_sensor)
+                    if left_edge < 0 and right_edge > max_x:
+                        break
 
 
 #--------------------- tests -------------------------#
@@ -73,11 +81,11 @@ def test_count_no_beacon_positions_for_row():
     sensors = fetch_data('sample_data/day15.txt')
     assert count_no_beacon_positions_for_row(sensors, row=10) == 26
 
-def test_rule_out():
-    sensor = Sensor(0,0, 1,0)
-    max_x = max_y = 1
-    possible_locations = {(x,y) for x in range(max_x+1) for y in range(max_y+1)}
-    assert sensor.rule_out(possible_locations) == {(1,1)}
+def test_no_beacons_range_for_row():
+    sensor = Sensor(8,7, 2,10)
+    assert sensor.no_beacons_range_for_row(-2) == (8, 8)
+    assert sensor.no_beacons_range_for_row(10) == (2, 14)
+    assert sensor.no_beacons_range_for_row(18) is None
 
 def test_find_distress_beacon():
     sensors = fetch_data('sample_data/day15.txt')
@@ -87,4 +95,5 @@ def test_find_distress_beacon():
 
 if __name__ == "__main__":
     sensors = fetch_data('data/day15.txt')
-    print(find_distress_beacon(sensors, 4000000, 4000000))
+    x, y = find_distress_beacon(sensors, 4000000, 4000000)
+    print(x*4000000 + y)

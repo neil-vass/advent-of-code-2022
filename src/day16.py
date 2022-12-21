@@ -53,6 +53,8 @@ class Volcano:
         release_by_end = 0
 
         # Strategy 1: Go for the highest-value valve, wherever it is?
+        # Works for very simple volcanos.
+        # With sample data, this gets to 1595, best is 1651. 
         while True:
             # Generate options
             preferred_move = None

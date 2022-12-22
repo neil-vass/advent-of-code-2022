@@ -3,8 +3,6 @@ from collections import deque
 from pprint import pprint
 import re
 
-Move = namedtuple("Move", "target cost value")
-
 class Valve:
     def __init__(self, id, flow_rate, tunnels):
         self.id = id
@@ -45,38 +43,6 @@ class Volcano:
         return sorted(valves_and_rates, key=lambda x: x[1])
 
 
-    def _choose_path(self, time_remaining, start_valve):
-
-        current_valve = start_valve
-        routes_and_costs = self._routes_and_costs()
-        valves_and_rates = self._valves_and_rates()
-        release_by_end = 0
-
-        # Strategy 1: Go for the highest-value valve, wherever it is?
-        # Works for very simple volcanos.
-        # With sample data, this gets to 1595, best is 1651. 
-        while True:
-            # Generate options
-            preferred_move = None
-            for target_valve, rate in valves_and_rates:
-                cost_for_this_move = routes_and_costs[current_valve][target_valve]
-                if cost_for_this_move <= time_remaining:
-                    value_for_this_move = rate * (time_remaining - cost_for_this_move)
-                    if preferred_move is None or preferred_move.value < value_for_this_move:
-                        preferred_move = Move(target_valve, cost_for_this_move, value_for_this_move)
-
-            if preferred_move is None:
-                break
-
-            # Take move
-            current_valve = preferred_move.target
-            time_remaining -= preferred_move.cost
-            release_by_end += preferred_move.value
-            valves_and_rates = [(v,r) for v,r in valves_and_rates if v != current_valve]
-            print(preferred_move)
-        
-        return release_by_end
-
     def _best_path_from(self, time_remaining, current_valve, routes_and_costs, valves_and_rates, release_by_end=0):
         possible_moves = []
         for target_valve, rate in valves_and_rates:
@@ -92,28 +58,11 @@ class Volcano:
                     )
                     possible_moves.append(value_for_this_move)
 
-        if possible_moves:
-            return max(possible_moves)
-        else:
-            return 0
+        return max(possible_moves, default=0)
 
-
-
-
-    def _choose_path_v2(self, time_remaining, start_valve):
-        # Strategy 2: A search of all paths, return the best choice.
-        # Might take a while, let's see...
-        current_valve = start_valve
-        routes_and_costs = self._routes_and_costs()
-        valves_and_rates = self._valves_and_rates()
-        release_by_end = 0
-
-        return self._best_path_from(time_remaining, start_valve, routes_and_costs, valves_and_rates)
-
-        
 
     def most_pressure_in(self, minutes):
-        return self._choose_path_v2(time_remaining=minutes, start_valve='AA')
+        return self._best_path_from(minutes, 'AA', self._routes_and_costs(), self._valves_and_rates())
 
 
 def fetch_data(path):
@@ -166,21 +115,3 @@ if __name__ == "__main__":
     volcano = fetch_data('data/day16.txt')
     print(volcano.most_pressure_in(30))
     
-
-
-# Or is it better to leave it (and maybe come back to it later?)
-# So we could consider all paths from here (from now until time runs out, or all valves turned)
-# Consider them "if I turn this now", and also "if I leave this now"
-# wow
-
-# Or ... 
-# Redo the map so we move directly to where we're turning something. 
-# Include the time to turn on valve in the "time to make that move" calculation.
-# Never be stood in front of a valve deciding whether to turn it on, we've either 
-# moved here to turn it, or we've run right past it.
-
-# A table of: where we could step to, and what the cost / gain would be, given our 
-# location and the time remaining.
-# Global hash table so we can look it up in future, only calcualte new values when we 
-# need to.
-# That might get too big and slow - but it's a start!

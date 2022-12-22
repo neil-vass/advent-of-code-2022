@@ -73,12 +73,47 @@ class Volcano:
             time_remaining -= preferred_move.cost
             release_by_end += preferred_move.value
             valves_and_rates = [(v,r) for v,r in valves_and_rates if v != current_valve]
+            print(preferred_move)
         
         return release_by_end
 
+    def _best_path_from(self, time_remaining, current_valve, routes_and_costs, valves_and_rates, release_by_end=0):
+        possible_moves = []
+        for target_valve, rate in valves_and_rates:
+                cost_for_this_move = routes_and_costs[current_valve][target_valve]
+                if cost_for_this_move <= time_remaining:
+                    value_for_this_move = rate * (time_remaining - cost_for_this_move)
+                    value_for_this_move += self._best_path_from(
+                        time_remaining=time_remaining - cost_for_this_move,
+                        current_valve= target_valve,
+                        routes_and_costs= routes_and_costs,
+                        valves_and_rates= [(v,r) for v,r in valves_and_rates if v not in (current_valve, target_valve)],
+                        release_by_end= release_by_end + value_for_this_move
+                    )
+                    possible_moves.append(value_for_this_move)
+
+        if possible_moves:
+            return max(possible_moves)
+        else:
+            return 0
+
+
+
+
+    def _choose_path_v2(self, time_remaining, start_valve):
+        # Strategy 2: A search of all paths, return the best choice.
+        # Might take a while, let's see...
+        current_valve = start_valve
+        routes_and_costs = self._routes_and_costs()
+        valves_and_rates = self._valves_and_rates()
+        release_by_end = 0
+
+        return self._best_path_from(time_remaining, start_valve, routes_and_costs, valves_and_rates)
+
+        
 
     def most_pressure_in(self, minutes):
-        return self._choose_path(time_remaining=minutes, start_valve='AA')
+        return self._choose_path_v2(time_remaining=minutes, start_valve='AA')
 
 
 def fetch_data(path):
@@ -128,8 +163,9 @@ def test_volcano_pressure():
 #-----------------------------------------------------#
 
 if __name__ == "__main__":
-    sut = fetch_data('sample_data/day16.txt')
-    pprint(sut._routes_and_costs())
+    volcano = fetch_data('data/day16.txt')
+    print(volcano.most_pressure_in(30))
+    
 
 
 # Or is it better to leave it (and maybe come back to it later?)

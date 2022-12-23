@@ -1,6 +1,6 @@
-from collections import namedtuple
+from itertools import chain, combinations
 from collections import deque
-from pprint import pprint
+from tqdm import tqdm
 import re
 
 class Valve:
@@ -43,7 +43,10 @@ class Volcano:
         return sorted(valves_and_rates, key=lambda x: x[1])
 
 
-    def _best_path_from(self, time_remaining, current_valve, routes_and_costs, valves_and_rates, release_by_end=0):
+    def _best_path_from(self, time_remaining, current_valve, routes_and_costs, valves_and_rates, release_by_end=0, already_calculated=None):
+        if already_calculated is None:
+            already_calculated = dict()
+            
         possible_moves = []
         for target_valve, rate in valves_and_rates:
                 cost_for_this_move = routes_and_costs[current_valve][target_valve]
@@ -63,6 +66,36 @@ class Volcano:
 
     def most_pressure_in(self, minutes):
         return self._best_path_from(minutes, 'AA', self._routes_and_costs(), self._valves_and_rates())
+
+
+    def most_pressure_with_elephant(self, minutes):
+        # An idea: Agree at the start which valves you'll each go for!
+        # Calculate the max release for all subsets of valves turned
+        # Pick the 2 disjoint sets that have the highest total pressure
+        routes_and_costs = self._routes_and_costs()
+        valves_and_rates = self._valves_and_rates()
+        powerset = list(chain.from_iterable(combinations(valves_and_rates, i) for i in range(1, len(valves_and_rates))))
+
+        progressbar = tqdm(desc='Best paths', total=sum(len(s) for s in powerset))
+        choices = []
+        for subset_of_valves_and_rates in powerset:
+            max_release = self._best_path_from(minutes, 'AA', routes_and_costs, subset_of_valves_and_rates)
+            choice = (set(v for v,r in subset_of_valves_and_rates), max_release)
+            choices.append(choice)
+            progressbar.update(len(subset_of_valves_and_rates))
+        progressbar.close()
+
+        progressbar = tqdm(desc='Best pair', total=(len(choices)*(len(choices)+1)//2))
+        best_combo = 0
+        for a in range(len(choices)):
+            valves_a, max_release_a = choices[a]
+            for b in range(a+1, len(choices)):
+                valves_b, max_release_b = choices[b]
+                if valves_a.isdisjoint(valves_b):
+                    best_combo = max(best_combo, max_release_a + max_release_b)
+                progressbar.update()
+        progressbar.close()
+        return best_combo
 
 
 def fetch_data(path):
@@ -109,9 +142,13 @@ def test_volcano_pressure():
     volcano = fetch_data('sample_data/day16.txt')
     assert volcano.most_pressure_in(minutes=30) == 1651
 
+def test_volcano_pressure_with_elephant():
+    volcano = fetch_data('sample_data/day16.txt')
+    assert volcano.most_pressure_with_elephant(minutes=26) == 1707
+
 #-----------------------------------------------------#
 
 if __name__ == "__main__":
     volcano = fetch_data('data/day16.txt')
-    print(volcano.most_pressure_in(30))
+    print(volcano.most_pressure_with_elephant(26))
     

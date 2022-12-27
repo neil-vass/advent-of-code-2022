@@ -47,6 +47,7 @@ class Volcano:
         if already_calculated is None:
             already_calculated = dict()
             
+            
         possible_moves = []
         for target_valve, rate in valves_and_rates:
                 cost_for_this_move = routes_and_costs[current_valve][target_valve]

@@ -1,64 +1,129 @@
 
+import numpy as np
+
+class Rock:
+    horizontal = np.ones((1,4), int)
+
+    plus = np.array([
+        [0,1,0],
+        [1,1,1],
+        [0,1,0]], int)
+
+    L = np.array([
+        [0,0,1],
+        [0,0,1],
+        [1,1,1]], int)
+
+    vertical = np.ones((4,1), int)
+
+    box = np.ones((2,2), int)
+
+
 
 class Chamber:
+    width = 7
     def __init__(self, jets):
-        self.tops = [0] * 7
+        self.content = np.zeros((3, Chamber.width), int)
         self.jets = jets
-    
+
     def tower_height(self):
-        return max(self.tops)
+        height = self.content.shape[0]
+        for i in range(height):
+            if self.content[i].any():
+                break
+            else:
+                height -= 1
+        return height
+
+    def _can_move(self, rock, rock_pos_x, rock_pos_y, direction):
+        if direction == 'v':
+            if rock_pos_x + rock.shape[0] == self.content.shape[0]:
+                return False
+
+            for x in reversed(range(rock.shape[0])):
+                for y in range(rock.shape[1]):
+                    moving_to_x = rock_pos_x + x + 1
+                    moving_to_y = rock_pos_y + y
+                    if rock[x,y] and self.content[moving_to_x, moving_to_y]:
+                        return False
+            return True
+        else:
+            raise Exception('Only works for down so far')
+
 
     def drop(self, rock):
-        x, y = self.tower_height() + 3, 2
-
-        stopped = False
-        while not stopped:
-            if next(self.jets) == '>':
-                if y + len(rock) < len(self.tops):
-                    y += 1
+        # Rock appears, add rows to chamber as needed (3 blanks above tower height, plus spaace for rock)
+        # We can stack rock rows, empty rows, and the existing chamber - even if empty rows are 0
+        # self.content = np.vstack([np.zeros((1,7),int), np.zeros((0,7),int), self.content])
+        rock_height, rock_width = rock.shape
+        rock_pos_x, rock_pos_y = 0, 2
+        padding_needed = 3
+        for i in range(padding_needed):
+            if self.content[i].any():
+                break
             else:
-                if y > 0:
-                    y -= 1
+                padding_needed -= 1
 
-            for i in range(len(rock)):
-                if self.tops[y+i] == (x+1) + rock[i][0]:
-                    # stopped. Let's do sums
-                    for j in range(len(rock)):
-                        self.tops[y+j] += rock[j][1]
-                    stopped = True
-                    break
-            x -= 1
+        padding_needed += rock_height
+        self.content = np.vstack([np.zeros((padding_needed, Chamber.width), int), self.content])
+        
+
+        # while not at rest:
+        while True:
+            # Jet tries to move rock (if we bang into something, we can't)
+                # TODO come back to this
+
+            # Rock tries to drop (if we bang into something, exit loop)
+            if self._can_move(rock, rock_pos_x, rock_pos_y, 'v'):
+                rock_pos_x +=1
+            else:
+                # If we can't drop: add 1's to the chamber
+                self.content[rock_pos_x:rock_pos_x+rock_height, rock_pos_y:rock_pos_y+rock_width] = rock
+                # Then break.
+                break
 
 
 
-
-def fetch_data(path):
+def fetch_jets(path):
+    with open(path, 'r') as f:
+        ln = f.readline().rstrip()
     while True:
-        with open(path, 'r') as f:
-            for c in f.readline().rstrip():
-                yield c
+        for c in ln:
+            yield c
 
 #--------------------- tests -------------------------#
 
-def test_drop_rocks():
-    jets = fetch_data('data/day17.txt')
-    chamber = Chamber(jets)
-
-    chamber.drop([(0,1), (0,1), (0,1), (0,1)])
-    assert chamber.tower_height() == 1
-    assert chamber.tops == [0, 0, 1, 1, 1, 1, 0]
-
-    chamber.drop([(1,2), (0,3), (1,2)])
-    #assert chamber.tower_height() == 4
-    assert chamber.tops == [0, 0, 3, 4, 3, 1, 0]
-
-
-def test_fetch_data():
-    data = fetch_data('sample_data/day17.txt')
+def test_fetch_jets():
+    data = fetch_jets('sample_data/day17.txt')
+    assert next(data) == '>'
+    for _ in range(40):
+        next(data)
     assert next(data) == '>'
 
+def test_drop_rock():
+    jets = fetch_jets('data/day17.txt')
+    chamber = Chamber(jets)
+    chamber.drop(Rock.horizontal)
+    assert chamber.tower_height() == 1
+    assert np.array_equal(chamber.content, np.array([
+        [0, 0, 0, 0, 0, 0, 0],
+        [0, 0, 0, 0, 0, 0, 0],
+        [0, 0, 0, 0, 0, 0, 0],
+        [0, 0, 1, 1, 1, 1, 0]], int))
+
+def test_drop_rock():
+    jets = fetch_jets('data/day17.txt')
+    chamber = Chamber(jets)
+    chamber.drop(Rock.plus)
+    assert chamber.tower_height() == 3
+    assert np.array_equal(chamber.content[-4:], np.array([
+        [0, 0, 0, 0, 0, 0, 0],
+        [0, 0, 0, 1, 0, 0, 0],
+        [0, 0, 1, 1, 1, 0, 0],
+        [0, 0, 0, 1, 0, 0, 0]], int))
+        
 #-----------------------------------------------------#
 
 if __name__ == "__main__":
-    data = fetch_data('data/day17.txt')
+    data = fetch_jets('data/day17.txt')
     print('Hello, World!')

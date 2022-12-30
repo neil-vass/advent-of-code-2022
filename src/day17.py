@@ -18,7 +18,7 @@ class Rock:
 
     box = np.ones((2,2), int)
 
-
+movements = { 'v': (+1, 0), '<': (0, -1), '>': (0, +1) }
 
 class Chamber:
     width = 7
@@ -36,20 +36,26 @@ class Chamber:
         return height
 
     def _can_move(self, rock, rock_pos_x, rock_pos_y, direction):
+        rock_height, rock_width = rock.shape
         if direction == 'v':
-            if rock_pos_x + rock.shape[0] == self.content.shape[0]:
+            if rock_pos_x + rock_height == self.content.shape[0]:
+                return False
+        elif direction == '<':
+            if rock_pos_y == 0:
+                return False
+        elif direction == '>':
+            if rock_pos_y + rock_width == Chamber.width:
                 return False
 
-            for x in reversed(range(rock.shape[0])):
-                for y in range(rock.shape[1]):
-                    moving_to_x = rock_pos_x + x + 1
-                    moving_to_y = rock_pos_y + y
-                    if rock[x,y] and self.content[moving_to_x, moving_to_y]:
-                        return False
-            return True
-        else:
-            raise Exception('Only works for down so far')
-
+        move_x, move_y = movements[direction]
+        for x in reversed(range(rock_height)):
+            for y in range(rock_width):
+                moving_to_x = rock_pos_x + x + move_x
+                moving_to_y = rock_pos_y + y + move_y
+                if rock[x,y] and self.content[moving_to_x, moving_to_y]:
+                    return False
+        return True
+        
 
     def drop(self, rock):
         # Rock appears, add rows to chamber as needed (3 blanks above tower height, plus spaace for rock)
@@ -71,7 +77,9 @@ class Chamber:
         # while not at rest:
         while True:
             # Jet tries to move rock (if we bang into something, we can't)
-                # TODO come back to this
+            jet_direction = next(self.jets)
+            if self._can_move(rock, rock_pos_x, rock_pos_y, jet_direction):
+                rock_pos_y = rock_pos_y-1 if jet_direction == '<' else rock_pos_y+1
 
             # Rock tries to drop (if we bang into something, exit loop)
             if self._can_move(rock, rock_pos_x, rock_pos_y, 'v'):
@@ -96,12 +104,16 @@ def fetch_jets(path):
 def test_fetch_jets():
     data = fetch_jets('sample_data/day17.txt')
     assert next(data) == '>'
+    assert next(data) == '>'
+    assert next(data) == '>'
+    assert next(data) == '<'
     for _ in range(40):
         next(data)
-    assert next(data) == '>'
+    assert next(data) == '<'
+    
 
 def test_drop_rock():
-    jets = fetch_jets('data/day17.txt')
+    jets = fetch_jets('sample_data/day17.txt')
     chamber = Chamber(jets)
     chamber.drop(Rock.horizontal)
     assert chamber.tower_height() == 1
@@ -111,17 +123,19 @@ def test_drop_rock():
         [0, 0, 0, 0, 0, 0, 0],
         [0, 0, 1, 1, 1, 1, 0]], int))
 
-def test_drop_rock():
-    jets = fetch_jets('data/day17.txt')
+def test_drop_2_rocks():
+    jets = fetch_jets('sample_data/day17.txt')
     chamber = Chamber(jets)
+    chamber.drop(Rock.horizontal)
     chamber.drop(Rock.plus)
-    assert chamber.tower_height() == 3
-    assert np.array_equal(chamber.content[-4:], np.array([
+    assert chamber.tower_height() == 4
+    assert np.array_equal(chamber.content[-5:], np.array([
         [0, 0, 0, 0, 0, 0, 0],
         [0, 0, 0, 1, 0, 0, 0],
         [0, 0, 1, 1, 1, 0, 0],
-        [0, 0, 0, 1, 0, 0, 0]], int))
-        
+        [0, 0, 0, 1, 0, 0, 0],
+        [0, 0, 1, 1, 1, 1, 0]], int))
+
 #-----------------------------------------------------#
 
 if __name__ == "__main__":

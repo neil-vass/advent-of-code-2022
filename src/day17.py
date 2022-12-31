@@ -84,15 +84,12 @@ class Chamber:
             if self._can_move(rock, rock_pos_x, rock_pos_y, jet_direction):
                 rock_pos_y = rock_pos_y-1 if jet_direction == '<' else rock_pos_y+1
 
-            # Rock tries to drop (if we bang into something, exit loop)
+            # Rock tries to drop (if we bang into something, exit loop and return)
             if self._can_move(rock, rock_pos_x, rock_pos_y, 'v'):
                 rock_pos_x +=1
             else:
-                # If we can't drop: add 1's to the chamber
-                self.content[rock_pos_x:rock_pos_x+rock_height, rock_pos_y:rock_pos_y+rock_width] = rock
-                # Then break.
+                self.content[rock_pos_x:rock_pos_x+rock_height, rock_pos_y:rock_pos_y+rock_width] += rock
                 break
-
 
 
 def fetch_jets(path):
@@ -165,7 +162,6 @@ def test_drop_rocks_with_cycle():
     assert chamber.tower_height() == 13
     chamber.drop(next(rocks))
     assert np.array_equal(chamber.content[-14], [0,0,0,0,0,1,0])
-    
     assert chamber.tower_height() == 15
 
     # assert np.array_equal(chamber.content[-15], [0,0,0,0,0,1,0])

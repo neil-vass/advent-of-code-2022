@@ -18,6 +18,15 @@ class Rock:
 
     box = np.ones((2,2), int)
 
+    def cycle():
+        while True:
+            yield Rock.horizontal
+            yield Rock.plus
+            yield Rock.L
+            yield Rock.vertical
+            yield Rock.box
+
+
 movements = { 'v': (+1, 0), '<': (0, -1), '>': (0, +1) }
 
 class Chamber:
@@ -58,19 +67,18 @@ class Chamber:
         
 
     def drop(self, rock):
-        # Rock appears, add rows to chamber as needed (3 blanks above tower height, plus spaace for rock)
-        # We can stack rock rows, empty rows, and the existing chamber - even if empty rows are 0
-        # self.content = np.vstack([np.zeros((1,7),int), np.zeros((0,7),int), self.content])
+        # Rock appears, add rows to chamber as needed (3 blanks above tower height, plus space for rock)
         rock_height, rock_width = rock.shape
         rock_pos_x, rock_pos_y = 0, 2
-        padding_needed = 3
+        padding_needed = 3 + rock_height
         for i in range(padding_needed):
-            if self.content[i].any():
+            if i >= self.content.shape[0]:
+                break
+            elif self.content[i].any():
                 break
             else:
                 padding_needed -= 1
 
-        padding_needed += rock_height
         self.content = np.vstack([np.zeros((padding_needed, Chamber.width), int), self.content])
         
 
@@ -135,6 +143,30 @@ def test_drop_2_rocks():
         [0, 0, 1, 1, 1, 0, 0],
         [0, 0, 0, 1, 0, 0, 0],
         [0, 0, 1, 1, 1, 1, 0]], int))
+
+def test_rock_cycle():
+    cycle = Rock.cycle()
+    assert np.array_equal(next(cycle), Rock.horizontal)
+    assert np.array_equal(next(cycle), Rock.plus)
+    assert np.array_equal(next(cycle), Rock.L)
+    assert np.array_equal(next(cycle), Rock.vertical)
+    assert np.array_equal(next(cycle), Rock.box)
+    assert np.array_equal(next(cycle), Rock.horizontal)
+
+def test_drop_rocks_with_cycle():
+    jets = fetch_jets('sample_data/day17.txt')
+    chamber = Chamber(jets)
+    rocks = Rock.cycle()
+    for _ in range(3):
+        chamber.drop(next(rocks))
+    assert chamber.tower_height() == 6
+    assert np.array_equal(chamber.content[-4], [1,1,1,1,0,0,0])
+    chamber.drop(next(rocks))
+    assert np.array_equal(chamber.content[-5], [0,0,1,0,1,0,0])
+    #assert np.array_equal(chamber.content[-4], [1,1,1,1,1,0,0])
+    assert chamber.tower_height() == 7
+    
+    
 
 #-----------------------------------------------------#
 

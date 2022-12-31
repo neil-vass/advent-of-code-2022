@@ -32,7 +32,7 @@ movements = { 'v': (+1, 0), '<': (0, -1), '>': (0, +1) }
 class Chamber:
     width = 7
     def __init__(self, jets):
-        self.content = np.zeros((3, Chamber.width), int)
+        self.content = np.zeros((1000, Chamber.width), int)
         self.jets = jets
 
     def tower_height(self):
@@ -69,18 +69,13 @@ class Chamber:
     def drop(self, rock):
         # Rock appears, add rows to chamber as needed (3 blanks above tower height, plus space for rock)
         rock_height, rock_width = rock.shape
-        rock_pos_x, rock_pos_y = 0, 2
-        padding_needed = 3 + rock_height
-        for i in range(padding_needed):
-            if i >= self.content.shape[0]:
-                break
-            elif self.content[i].any():
-                break
-            else:
-                padding_needed -= 1
 
-        self.content = np.vstack([np.zeros((padding_needed, Chamber.width), int), self.content])
-        
+        rock_from_floor = self.tower_height() + 3 + rock_height
+        if rock_from_floor > self.content.shape[0]:
+            self.content = np.vstack([np.zeros((1000, Chamber.width), int), self.content])
+
+        rock_pos_x = self.content.shape[0] - rock_from_floor
+        rock_pos_y = 2
 
         # while not at rest:
         while True:
@@ -125,7 +120,7 @@ def test_drop_rock():
     chamber = Chamber(jets)
     chamber.drop(Rock.horizontal)
     assert chamber.tower_height() == 1
-    assert np.array_equal(chamber.content, np.array([
+    assert np.array_equal(chamber.content[-4:], np.array([
         [0, 0, 0, 0, 0, 0, 0],
         [0, 0, 0, 0, 0, 0, 0],
         [0, 0, 0, 0, 0, 0, 0],
@@ -160,16 +155,37 @@ def test_drop_rocks_with_cycle():
     for _ in range(3):
         chamber.drop(next(rocks))
     assert chamber.tower_height() == 6
-    assert np.array_equal(chamber.content[-4], [1,1,1,1,0,0,0])
     chamber.drop(next(rocks))
-    assert np.array_equal(chamber.content[-5], [0,0,1,0,1,0,0])
-    #assert np.array_equal(chamber.content[-4], [1,1,1,1,1,0,0])
     assert chamber.tower_height() == 7
+    chamber.drop(next(rocks))
+    assert chamber.tower_height() == 9
+    chamber.drop(next(rocks))
+    assert chamber.tower_height() == 10
+    chamber.drop(next(rocks))
+    assert chamber.tower_height() == 13
+    chamber.drop(next(rocks))
+    assert np.array_equal(chamber.content[-14], [0,0,0,0,0,1,0])
     
+    assert chamber.tower_height() == 15
+
+    # assert np.array_equal(chamber.content[-15], [0,0,0,0,0,1,0])
+
+def test_drop_2022_rocks():
+    jets = fetch_jets('sample_data/day17.txt')
+    chamber = Chamber(jets)
+    rocks = Rock.cycle()
+    for _ in range(2022):
+        chamber.drop(next(rocks))
+    assert chamber.tower_height() == 3068
     
 
 #-----------------------------------------------------#
 
 if __name__ == "__main__":
-    data = fetch_jets('data/day17.txt')
-    print('Hello, World!')
+    jets = fetch_jets('data/day17.txt')
+    chamber = Chamber(jets)
+    rocks = Rock.cycle()
+    for _ in range(2022):
+        chamber.drop(next(rocks))
+    print(chamber.tower_height())
+    # Gets 3120, that's too low.

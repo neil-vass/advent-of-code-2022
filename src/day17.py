@@ -81,7 +81,7 @@ class Chamber:
         # while not at rest:
         while True:
             # Jet tries to move rock (if we bang into something, we can't)
-            jet_direction = next(self.jets)
+            jet_idx, jet_direction = next(self.jets)
             if self._can_move(rock, rock_pos_x, rock_pos_y, jet_direction):
                 rock_pos_y = rock_pos_y-1 if jet_direction == '<' else rock_pos_y+1
 
@@ -97,20 +97,20 @@ def fetch_jets(path):
     with open(path, 'r') as f:
         ln = f.readline().rstrip()
     while True:
-        for c in ln:
-            yield c
+        for jet in enumerate(ln):
+            yield jet
 
 #--------------------- tests -------------------------#
 
 def test_fetch_jets():
     data = fetch_jets('sample_data/day17.txt')
-    assert next(data) == '>'
-    assert next(data) == '>'
-    assert next(data) == '>'
-    assert next(data) == '<'
+    assert next(data) == (0, '>')
+    assert next(data) == (1, '>')
+    assert next(data) == (2, '>')
+    assert next(data) == (3, '<')
     for _ in range(40):
         next(data)
-    assert next(data) == '<'
+    assert next(data) == (4, '<')
     
 
 def test_drop_rock():

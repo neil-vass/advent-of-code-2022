@@ -92,6 +92,7 @@ class Chamber:
                 self.content[rock_pos_x:rock_pos_x+rock_height, rock_pos_y:rock_pos_y+rock_width] += rock
                 break
 
+        return f'{rock_name}, {jet_idx}, {self.tower_height()}\n'
 
 def fetch_jets(path):
     with open(path, 'r') as f:
@@ -180,7 +181,42 @@ if __name__ == "__main__":
     jets = fetch_jets('data/day17.txt')
     chamber = Chamber(jets)
     rocks = Rock.cycle()
-    for _ in range(2022):
-        chamber.drop(next(rocks))
+    patterns = []
+    for _ in range(10000):
+        state = chamber.drop(next(rocks))
+        patterns.append(state)
+    with open('patterns.txt', 'w') as f:
+        f.writelines(patterns)    
     print(chamber.tower_height())
+
+    # Having a look in Excel :) 
+
+    #---------------------------------------------------#
+    # For sample data: 
+    # Pattern starts at 40th rock
+    # Pattern length is 35 rocks
+    # Pattern adds 53 to tower hieght
+    # We get to 66 before pattern starts
+
+    # So for 2022 rocks, we'd get:
+    ## 39 rocks, 66 height
+    ## 56 full patterns, 53 height each
+    ## The first 23 rocks of a pattern, which is 34 height
+    ## Total: 3068 .... Great, that's right!
+
+    # And for 1 trillion rocks, we'd get:
+    # 1514285714288 ... Amazing! 
+
+    #---------------------------------------------------#
+    # For real data:
+    # I see (box, 2966) at rock 510, 2255, 4000. So repeats every 1745.
+    # Before the pattern starts, the first 71 rocks gets tower of 104
+    # Pattern length is 1745. Looks like:
+    #   first pattern adds 2737, and later ones add 2738 to tower height
+
+    # So for 2022 rocks (right answer is 3135), we get that right!
+    # And for 1 trillion ... Gold star!
+
+
+
     

@@ -20,11 +20,11 @@ class Rock:
 
     def cycle():
         while True:
-            yield Rock.horizontal
-            yield Rock.plus
-            yield Rock.L
-            yield Rock.vertical
-            yield Rock.box
+            yield ('-', Rock.horizontal)
+            yield ('+', Rock.plus)
+            yield ('L', Rock.L)
+            yield ('|', Rock.vertical)
+            yield ('o', Rock.box)
 
 
 movements = { 'v': (+1, 0), '<': (0, -1), '>': (0, +1) }
@@ -66,8 +66,9 @@ class Chamber:
         return True
         
 
-    def drop(self, rock):
+    def drop(self, rock_info):
         # Rock appears, add rows to chamber as needed (3 blanks above tower height, plus space for rock)
+        rock_name, rock = rock_info
         rock_height, rock_width = rock.shape
 
         rock_from_floor = self.tower_height() + 3 + rock_height
@@ -115,7 +116,7 @@ def test_fetch_jets():
 def test_drop_rock():
     jets = fetch_jets('sample_data/day17.txt')
     chamber = Chamber(jets)
-    chamber.drop(Rock.horizontal)
+    chamber.drop(('-', Rock.horizontal))
     assert chamber.tower_height() == 1
     assert np.array_equal(chamber.content[-4:], np.array([
         [0, 0, 0, 0, 0, 0, 0],
@@ -126,8 +127,8 @@ def test_drop_rock():
 def test_drop_2_rocks():
     jets = fetch_jets('sample_data/day17.txt')
     chamber = Chamber(jets)
-    chamber.drop(Rock.horizontal)
-    chamber.drop(Rock.plus)
+    chamber.drop(('-', Rock.horizontal))
+    chamber.drop(('+', Rock.plus))
     assert chamber.tower_height() == 4
     assert np.array_equal(chamber.content[-5:], np.array([
         [0, 0, 0, 0, 0, 0, 0],
@@ -138,12 +139,12 @@ def test_drop_2_rocks():
 
 def test_rock_cycle():
     cycle = Rock.cycle()
-    assert np.array_equal(next(cycle), Rock.horizontal)
-    assert np.array_equal(next(cycle), Rock.plus)
-    assert np.array_equal(next(cycle), Rock.L)
-    assert np.array_equal(next(cycle), Rock.vertical)
-    assert np.array_equal(next(cycle), Rock.box)
-    assert np.array_equal(next(cycle), Rock.horizontal)
+    assert np.array_equal(next(cycle)[1], Rock.horizontal)
+    assert np.array_equal(next(cycle)[1], Rock.plus)
+    assert np.array_equal(next(cycle)[1], Rock.L)
+    assert np.array_equal(next(cycle)[1], Rock.vertical)
+    assert np.array_equal(next(cycle)[1], Rock.box)
+    assert np.array_equal(next(cycle)[1], Rock.horizontal)
 
 def test_drop_rocks_with_cycle():
     jets = fetch_jets('sample_data/day17.txt')

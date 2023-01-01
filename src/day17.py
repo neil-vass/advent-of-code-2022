@@ -164,8 +164,6 @@ def test_drop_rocks_with_cycle():
     assert np.array_equal(chamber.content[-14], [0,0,0,0,0,1,0])
     assert chamber.tower_height() == 15
 
-    # assert np.array_equal(chamber.content[-15], [0,0,0,0,0,1,0])
-
 def test_drop_2022_rocks():
     jets = fetch_jets('sample_data/day17.txt')
     chamber = Chamber(jets)
@@ -184,4 +182,4 @@ if __name__ == "__main__":
     for _ in range(2022):
         chamber.drop(next(rocks))
     print(chamber.tower_height())
-    # Gets 3120, that's too low.
+    

@@ -8,36 +8,34 @@ class Factory:
 
 def fetch_data(path):
     with open(path, 'r') as f:
-        blueprint = dict()
         for ln in f:
             m = re.match(r'Blueprint (\d+):', ln)
             id = int(m[1])
             details = dict()
-            blueprint[id] = details
             for robot_type, costs in re.findall(r'Each (\w+) robot costs (.+?)\.', ln):
                 details[robot_type] = dict()
                 for amount, material_type in re.findall(r'(\d+) (ore|clay|obsidian)', costs):
                     details[robot_type][material_type] = int(amount)
-        return blueprint
+            yield id, details
 
 #--------------------- tests -------------------------#
 
 def test_fetch_data():
-    data = fetch_data('sample_data/day19.txt')
-    assert data == {
-        1: {
-            'ore': {'ore': 4},
-            'clay': {'ore': 2},
-            'obsidian': {'ore': 3, 'clay': 14},
-            'geode': {'ore': 2, 'obsidian': 7}
-        },
-        2: {
-            'ore': {'ore': 2},
-            'clay': {'ore': 3},
-            'obsidian': {'ore': 3, 'clay': 8},
-            'geode': {'ore': 3, 'obsidian': 12}
-        }
-    }
+    blueprints = fetch_data('sample_data/day19.txt')
+    assert next(blueprints) == (1, {
+        'ore': {'ore': 4},
+        'clay': {'ore': 2},
+        'obsidian': {'ore': 3, 'clay': 14},
+        'geode': {'ore': 2, 'obsidian': 7}
+    })
+
+    assert next(blueprints) == (2, {
+        'ore': {'ore': 2},
+        'clay': {'ore': 3},
+        'obsidian': {'ore': 3, 'clay': 8},
+        'geode': {'ore': 3, 'obsidian': 12}
+    })
+
 
 #-----------------------------------------------------#
 

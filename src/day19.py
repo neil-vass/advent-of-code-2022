@@ -1,61 +1,82 @@
 import re
 from collections import defaultdict, deque
-import copy
 import cProfile
 
 class Factory:
-    initial_state = (24, (('ore', 1, 0),))
+    inventory_indexes = {'ore': 0, 'clay': 1, 'obsidian': 2, 'geode': 3}
+    initial_state = (24, ((1, 0), (0, 0), (0, 0), (0, 0)))
+
+    def time_remaining(state):
+        return state[0]
+    
+    def inventory(state, rock_type):
+        return state[1][Factory.inventory_indexes[rock_type]]
+
+    def possible_materials(state):
+        possible = set()
+        for rock_type, idx in Factory.inventory_indexes.items():
+            if state[1][idx][0] > 0:
+                possible.add(rock_type)
+        return possible
+
 
     def __init__(self, blueprint):
         self.blueprint = blueprint
 
+        # Optimisation: Don't offer to make a robot type once we have enough to make any other bot in one step
+        self.max_robots_needed = defaultdict(int)
+        for details in blueprint.values():
+            for material_type, material_quantity in details.items():
+                self.max_robots_needed[material_type] = max(material_quantity, self.max_robots_needed[material_type])
+
     # What could we make next?
+    ## List the (robot_type, time) for all robot types we can make
+    ## Optimisation: Don't offer to make a robot type once we have enough to make any other bot in one step
     def choices(self, state):
-        # state = (24, (('ore', 1, 0)))
-        time_remaining, current_robots_and_materials = state
-        possible_materials, _, _ = zip(*current_robots_and_materials)
+        possible_materials = Factory.possible_materials(state)
 
         robots_and_times = []
         for robot_type, materials_needed in self.blueprint.items():
+            if robot_type != 'geode':
+                have_already, _ = Factory.inventory(state, robot_type)
+                if have_already >= self.max_robots_needed[robot_type]:
+                    continue
+            
             if set(materials_needed.keys()).issubset(possible_materials):
                 time_needed = 0
-                for material_type, quantity_needed in materials_needed.items():   
-                    _, robot_count, material_stock = [s for s in current_robots_and_materials if s[0] == material_type][0]
+                for rock_type, quantity_needed in materials_needed.items():   
+                    robot_count, material_stock = Factory.inventory(state, rock_type)
                     if quantity_needed > material_stock:
                         time_for_this_material = -((quantity_needed - material_stock) // -robot_count) # Ceiling division
                         time_needed = max(time_needed, time_for_this_material)
                 time_needed += 1 # Time to make the robot once all materials are ready
-                if time_needed <= time_remaining:
+                if time_needed <= Factory.time_remaining(state):
                     robots_and_times.append((robot_type, time_needed))
         return robots_and_times
 
+
     # Put in an order for a robot. We trust that this is one of the chocies().
     def make(self, robot_to_make, time_needed, state):
-        time_remaining, current_robots_and_materials = state
         new_robots_and_materials = []
-        is_first_robot_of_this_type = True
-        for material_type, robot_quantity, material_stock in current_robots_and_materials:
+        for rock_type in Factory.inventory_indexes.keys():
+            robot_quantity, material_stock = Factory.inventory(state, rock_type)
             material_stock += (robot_quantity * time_needed)
-            if material_type in self.blueprint[robot_to_make]:
-                material_stock -= self.blueprint[robot_to_make][material_type]
-            if material_type == robot_to_make:
+            if rock_type in self.blueprint[robot_to_make]:
+                material_stock -= self.blueprint[robot_to_make][rock_type]
+            if rock_type == robot_to_make:
                 robot_quantity += 1
-                is_first_robot_of_this_type = False
-            new_robots_and_materials.append((material_type, robot_quantity, material_stock))
+            new_robots_and_materials.append((robot_quantity, material_stock))
         
-        if is_first_robot_of_this_type:
-            new_robots_and_materials.append((robot_to_make, 1, 0))
-        
-        time_remaining -= time_needed
+        time_remaining = Factory.time_remaining(state) - time_needed
         return (time_remaining, tuple(new_robots_and_materials))
         
 
     def run_out_clock(self, state):
-        time_remaining, current_robots_and_materials = state
         new_robots_and_materials = []
-        for material_type, robot_quantity, material_stock in current_robots_and_materials:
-            material_stock += (robot_quantity * time_remaining)
-            new_robots_and_materials.append((material_type, robot_quantity, material_stock))
+        for rock_type in Factory.inventory_indexes.keys():
+            robot_quantity, material_stock = Factory.inventory(state, rock_type)
+            material_stock += (robot_quantity * Factory.time_remaining(state))
+            new_robots_and_materials.append((robot_quantity, material_stock))
         return (0, tuple(new_robots_and_materials))
 
 
@@ -73,10 +94,8 @@ def fetch_data(path):
 
 
 def geode_count(state):
-    time_remaining, current_robots_and_materials = state
-    geodes = [material_stock for material_type, robot_quantity, material_stock 
-                in current_robots_and_materials if material_type == 'geode']
-    return geodes[0] if geodes else 0
+    return Factory.inventory(state, 'geode')[1]
+    
 
 # Ask the factory to crack the most geodes it can.
 def make_good_choices(factory):
@@ -99,6 +118,13 @@ def make_good_choices(factory):
 
 #--------------------- tests -------------------------#
 
+def test_state():
+    state = Factory.initial_state
+    assert Factory.time_remaining(state) == 24
+    assert Factory.inventory(state, 'ore') == (1, 0)
+    assert Factory.possible_materials(state) == {'ore'}
+
+
 def test_fetch_data():
     blueprints = fetch_data('sample_data/day19.txt')
     assert next(blueprints) == (1, {
@@ -115,19 +141,24 @@ def test_fetch_data():
         'geode': {'ore': 3, 'obsidian': 12}
     })
 
-
 def test_factory_initialisation():
     blueprints = fetch_data('sample_data/day19.txt')
     id, blueprint = next(blueprints)
     factory = Factory(blueprint)
+    assert factory.max_robots_needed == {
+        'ore': 4,
+        'clay': 14,
+        'obsidian': 7
+    }
     assert factory.choices(Factory.initial_state) == [('ore', 5), ('clay', 3)]
+
 
 def test_make_robot():
     blueprints = fetch_data('sample_data/day19.txt')
     id, blueprint = next(blueprints)
     factory = Factory(blueprint)
     state = factory.make('clay', 3, Factory.initial_state)
-    assert state == (21, (('ore', 1, 1), ('clay', 1, 0)))
+    assert state == (21, ((1, 1), (1, 0), (0, 0), (0, 0)))
 
 
 def test_example_factory_run():
@@ -142,7 +173,7 @@ def test_example_factory_run():
     assert ('clay', 2) in factory.choices(state)
     state = factory.make('clay', 2, state)
 
-    assert state == (17, (('ore', 1, 1), ('clay', 3, 6))) # Minute 7
+    assert state == (17, ((1, 1), (3, 6), (0, 0), (0, 0))) # Minute 7
     assert ('obsidian', 4) in factory.choices(state)
     state = factory.make('obsidian', 4, state)
     assert ('clay', 1) in factory.choices(state)

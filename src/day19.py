@@ -2,6 +2,7 @@
 # Used 2 great suggestions from the post here to prune the search space:
 # https://www.reddit.com/r/adventofcode/comments/zpy5rm/2022_day_19_what_are_your_insights_and/
 
+import operator
 import re
 from collections import defaultdict, deque
 import cProfile
@@ -16,25 +17,19 @@ class Factory:
     def inventory(state, rock_type):
         return state[1][Factory.inventory_indexes[rock_type]]
 
-    def possible_materials(state):
-        possible = set()
-        for rock_type, idx in Factory.inventory_indexes.items():
-            if state[1][idx][0] > 0:
-                possible.add(rock_type)
-        return possible
-
 
     def __init__(self, blueprint):
         self.blueprint = blueprint
 
-        # Optimisation: Don't offer to make a robot type once we have enough to make any other bot in one step
+        # Optimisation (from Reddit): Don't offer to make a robot type 
+        # once we have enough to make any other bot in one step
         self.max_robots_needed = defaultdict(int)
         for details in blueprint.values():
             for material_type, material_quantity in details.items():
                 self.max_robots_needed[material_type] = max(material_quantity, self.max_robots_needed[material_type])
 
 
-    # Optimisation: For any resource R that's not geode: 
+    # Optimisation (from Reddit): For any resource R that's not geode: 
     # if you already have X robots creating resource R, 
     # a current stock of Y for that resource, 
     # T minutes left, 
@@ -59,9 +54,7 @@ class Factory:
 
     # What could we make next?
     ## List the (robot_type, time) for all robot types we can make
-    ## Optimisation: Don't offer to make a robot type once we have enough to make any other bot in one step
     def choices(self, state):
-        possible_materials = Factory.possible_materials(state)
         robots_we_have_enough_of = self.no_need_for_robots(state)
 
         robots_and_times = []
@@ -69,16 +62,19 @@ class Factory:
             if robot_type in robots_we_have_enough_of:
                     continue
             
-            if set(materials_needed.keys()).issubset(possible_materials):
-                time_needed = 0
-                for rock_type, quantity_needed in materials_needed.items():   
-                    robot_count, material_stock = Factory.inventory(state, rock_type)
-                    if quantity_needed > material_stock:
-                        time_for_this_material = -((quantity_needed - material_stock) // -robot_count) # Ceiling division
-                        time_needed = max(time_needed, time_for_this_material)
-                time_needed += 1 # Time to make the robot once all materials are ready
-                if time_needed <= Factory.time_remaining(state):
-                    robots_and_times.append((robot_type, time_needed))
+            time_needed = 0
+            can_make = True
+            for rock_type, quantity_needed in materials_needed.items():   
+                robot_count, material_stock = Factory.inventory(state, rock_type)
+                if robot_count == 0:
+                    can_make = False
+                    break
+                if quantity_needed > material_stock:
+                    time_for_this_material = -((quantity_needed - material_stock) // -robot_count) # Ceiling division
+                    time_needed = max(time_needed, time_for_this_material)
+            time_needed += 1 # Time to make the robot once all materials are ready
+            if can_make and time_needed <= Factory.time_remaining(state):
+                robots_and_times.append((robot_type, time_needed))
         return robots_and_times
 
 
@@ -125,10 +121,10 @@ def geode_count(state):
     
 
 # Ask the factory to crack the most geodes it can.
-def make_good_choices(factory):
+def make_good_choices(factory, start=Factory.initial_state):
     most_geodes = 0
-    explored = {Factory.initial_state}
-    queue = deque([Factory.initial_state])
+    explored = {start}
+    queue = deque([start])
     while queue:
         state = queue.popleft()
         next_moves = factory.choices(state)
@@ -154,15 +150,16 @@ def find_quality_levels(blueprints):
 
 
 # Change time to 32, only use up to 3 blueprints.
-def find_quality_levels_part_2(blueprints):
-    levels = []
+def find_most_geodes_part_2(blueprints):
+    most_geodes = []
+    time_remaining, inventory = Factory.initial_state
+    state = (32, inventory)
     for id, blueprint in blueprints:
         if id > 3:
             break
         factory = Factory(blueprint)
-        most_geodes = make_good_choices(factory)
-        levels.append(id * most_geodes)
-    return levels
+        most_geodes.append(make_good_choices(factory, state))
+    return most_geodes
 
 
 #--------------------- tests -------------------------#
@@ -238,7 +235,7 @@ def test_example_factory_run():
     state = factory.run_out_clock(state)
     assert geode_count(state) == 9
 
-# Takes a while (16 seconds for this example)
+
 def test_make_good_choices():
     blueprints = fetch_data('sample_data/day19.txt')
     id, blueprint = next(blueprints)
@@ -249,17 +246,17 @@ def test_quality_levels():
     blueprints = fetch_data('sample_data/day19.txt')
     assert find_quality_levels(blueprints) == [9, 24]
 
-def test_quality_levels_with_32_minutes():
+def test_most_geodes_with_32_minutes():
     blueprints = fetch_data('sample_data/day19.txt')
-    assert find_quality_levels_part_2(blueprints) == [56, 62]
+    assert find_most_geodes_part_2(blueprints) == [56, 62]
 
 #-----------------------------------------------------#
 
 def foo():
     blueprints = fetch_data('data/day19.txt')
-    levels = find_quality_levels(blueprints)
-    print(levels)
-    print(f'Total quality: {sum(levels)}')
+    most_geodes = find_most_geodes_part_2(blueprints)
+    print(most_geodes)
+    print(f'Total: {operator.mul(*most_geodes)}')
 
 if __name__ == "__main__":
     cProfile.run('foo()', sort='cumulative')

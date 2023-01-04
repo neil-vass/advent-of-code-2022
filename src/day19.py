@@ -256,7 +256,6 @@ def foo():
     blueprints = fetch_data('data/day19.txt')
     most_geodes = find_most_geodes_part_2(blueprints)
     print(most_geodes)
-    print(f'Total: {operator.mul(*most_geodes)}')
 
 if __name__ == "__main__":
     cProfile.run('foo()', sort='cumulative')

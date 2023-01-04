@@ -1,3 +1,7 @@
+# I got the algorithm working myself, but it took ages and I was at a loss for optimisations!
+# Used 2 great suggestions from the post here to prune the search space:
+# https://www.reddit.com/r/adventofcode/comments/zpy5rm/2022_day_19_what_are_your_insights_and/
+
 import re
 from collections import defaultdict, deque
 import cProfile
@@ -29,17 +33,40 @@ class Factory:
             for material_type, material_quantity in details.items():
                 self.max_robots_needed[material_type] = max(material_quantity, self.max_robots_needed[material_type])
 
+
+    # Optimisation: For any resource R that's not geode: 
+    # if you already have X robots creating resource R, 
+    # a current stock of Y for that resource, 
+    # T minutes left, 
+    # and no robot requires more than Z of resource R to build, 
+    # and X * T+Y >= T * Z, 
+    # then you never need to build another robot mining R anymore.
+    def no_need_for_robots(self, state):
+        no_more = []
+        for rock_type in ('ore', 'clay', 'obsidian'):
+            robot_count, material_stock = Factory.inventory(state, rock_type)
+            if robot_count >= self.max_robots_needed[rock_type]:
+                no_more.append(rock_type)
+            else:
+                X = robot_count
+                R = rock_type
+                Y = material_stock
+                T = Factory.time_remaining(state)
+                Z = self.max_robots_needed[rock_type]
+                if X * T+Y >= T * Z:
+                    no_more.append(rock_type)
+        return no_more
+
     # What could we make next?
     ## List the (robot_type, time) for all robot types we can make
     ## Optimisation: Don't offer to make a robot type once we have enough to make any other bot in one step
     def choices(self, state):
         possible_materials = Factory.possible_materials(state)
+        robots_we_have_enough_of = self.no_need_for_robots(state)
 
         robots_and_times = []
         for robot_type, materials_needed in self.blueprint.items():
-            if robot_type != 'geode':
-                have_already, _ = Factory.inventory(state, robot_type)
-                if have_already >= self.max_robots_needed[robot_type]:
+            if robot_type in robots_we_have_enough_of:
                     continue
             
             if set(materials_needed.keys()).issubset(possible_materials):
@@ -116,6 +143,28 @@ def make_good_choices(factory):
                 queue.append(option)
     return most_geodes
 
+
+def find_quality_levels(blueprints):
+    levels = []
+    for id, blueprint in blueprints:
+        factory = Factory(blueprint)
+        most_geodes = make_good_choices(factory)
+        levels.append(id * most_geodes)
+    return levels
+
+
+# Change time to 32, only use up to 3 blueprints.
+def find_quality_levels_part_2(blueprints):
+    levels = []
+    for id, blueprint in blueprints:
+        if id > 3:
+            break
+        factory = Factory(blueprint)
+        most_geodes = make_good_choices(factory)
+        levels.append(id * most_geodes)
+    return levels
+
+
 #--------------------- tests -------------------------#
 
 def test_state():
@@ -189,20 +238,28 @@ def test_example_factory_run():
     state = factory.run_out_clock(state)
     assert geode_count(state) == 9
 
-# Runs for lower 'time_remaining' values (up to 18 is very fast, then gets slower and slower)
+# Takes a while (16 seconds for this example)
 def test_make_good_choices():
     blueprints = fetch_data('sample_data/day19.txt')
     id, blueprint = next(blueprints)
     factory = Factory(blueprint)
     assert make_good_choices(factory) == 9
 
+def test_quality_levels():
+    blueprints = fetch_data('sample_data/day19.txt')
+    assert find_quality_levels(blueprints) == [9, 24]
+
+def test_quality_levels_with_32_minutes():
+    blueprints = fetch_data('sample_data/day19.txt')
+    assert find_quality_levels_part_2(blueprints) == [56, 62]
+
 #-----------------------------------------------------#
 
 def foo():
-    blueprints = fetch_data('sample_data/day19.txt')
-    id, blueprint = next(blueprints)
-    factory = Factory(blueprint)
-    print(f'Geodes: {make_good_choices(factory)}')
+    blueprints = fetch_data('data/day19.txt')
+    levels = find_quality_levels(blueprints)
+    print(levels)
+    print(f'Total quality: {sum(levels)}')
 
 if __name__ == "__main__":
     cProfile.run('foo()', sort='cumulative')

@@ -132,3 +132,5 @@ dmypy.json
 # Pyre type checker
 .pyre/
 patterns.txt
+~$advent-of-code-2022-day-17-part-2.xlsx
+advent-of-code-2022-day-17-part-2.xlsx

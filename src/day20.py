@@ -1,5 +1,4 @@
 
-
 def fetch_data(path):
     with open(path, 'r') as f:
         data = []
@@ -7,7 +6,7 @@ def fetch_data(path):
             data.append(int(ln))
     return data
 
-# This is messy, due to how Python list inserts work and this puzzle's requirements
+
 def mix_step(data, idx_in_data, remix):
     current_pos = remix.index(idx_in_data)
     distance_to_move = data[idx_in_data]
@@ -30,8 +29,7 @@ def decrypt_data_file(data, steps=None, key=1, mix_times=1):
     for _ in range(mix_times):
         for idx in range(steps):
             mix_step(data, idx, remix)
-       
-    # Apply remix to data
+
     return [data[pos] for pos in remix]
 
 

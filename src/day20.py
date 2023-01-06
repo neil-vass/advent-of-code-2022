@@ -21,13 +21,15 @@ def mix_step(data, idx_in_data, remix):
     remix.insert(new_pos, idx_in_data)
 
   
-def decrypt_data_file(data, steps=None):
+def decrypt_data_file(data, steps=None, key=1, mix_times=1):
     if steps is None:
         steps = len(data)
 
+    data = [n * key for n in data]
     remix = list(range(len(data)))
-    for idx in range(steps):
-        mix_step(data, idx, remix)
+    for _ in range(mix_times):
+        for idx in range(steps):
+            mix_step(data, idx, remix)
        
     # Apply remix to data
     return [data[pos] for pos in remix]
@@ -69,14 +71,17 @@ def test_get_coordinates():
     decrypted = decrypt_data_file(data)
     assert get_coordinates(decrypted) == (4, -3, 2)
 
-
+def test_decrypt_part_2():
+    data = fetch_data('sample_data/day20.txt')
+    decrypted = decrypt_data_file(data, key=811589153, mix_times=10)
+    assert get_coordinates(decrypted) == (811589153, 2434767459, -1623178306)
     
 
 #-----------------------------------------------------#
 
 if __name__ == "__main__":
     data = fetch_data('data/day20.txt')
-    decrypted = decrypt_data_file(data)
+    decrypted = decrypt_data_file(data, key=811589153, mix_times=10)
     coords = get_coordinates(decrypted)
     print(sum(coords))
     # Gets 11621 - 'your answer is too high'

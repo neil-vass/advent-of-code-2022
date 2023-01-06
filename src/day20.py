@@ -84,4 +84,4 @@ if __name__ == "__main__":
     decrypted = decrypt_data_file(data, key=811589153, mix_times=10)
     coords = get_coordinates(decrypted)
     print(sum(coords))
-    # Gets 11621 - 'your answer is too high'
+    

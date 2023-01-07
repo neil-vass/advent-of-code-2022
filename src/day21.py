@@ -30,20 +30,38 @@ class HumnExpression:
         self.expr = expr
 
     def __repr__(self):
-        return repr(self.expr)
+        if self.expr == 'humn': 
+            return 'humn'
+        a, op, b = self.expr
+        op = next(k for k,v in operators.items() if v == op)
+        if op == '/': 
+            op = '//'
+        return f'({repr(a)} {op} {repr(b)})'
+
+
+def invert(op):
+    if op == operator.add: return operator.sub
+    if op == operator.sub: return operator.add
+    if op == operator.mul: return operator.floordiv
+    if op == operator.floordiv: return operator.mul
 
 
 def evaluate(humn_expression, target):
     if humn_expression.expr == 'humn':
         return target
-    return humn_expression.expr
-
-    # ((4 + (2 * ('humn' - 3))) // 4) == 150
-    # outside looks like (tuple, op, int), so:
-    ## target becomes result of  150 , opposite-of-op, int
-    ## move onto tuple and keep repeating
-    ## if you see (int, op, tuple) do int, opposite-of-op, target
-    ## if you see 'humn' return target
+    
+    a, op, b = humn_expression.expr
+    inverse_op = invert(op)
+    if type(a) is HumnExpression:
+        new_target = inverse_op(target, b)
+        new_expr = a
+    else:
+        if op in (operator.sub, operator.floordiv):
+            new_target = op(a, target)
+        else:
+            new_target = inverse_op(target, a)
+        new_expr = b
+    return evaluate(new_expr, new_target)
 
 
 def yell_unless_humn(monkeys, name):
@@ -70,7 +88,6 @@ def humn_needs_to_yell(monkeys):
     humn_expression = left_result if type(left_result) is HumnExpression else right_result
     return evaluate(humn_expression, target)
 
-
 #--------------------- tests -------------------------#
 
 def test_fetch_monkeys():
@@ -84,7 +101,7 @@ def test_find_root():
 
 def test_simple_humn_needs_to_yell():
     monkeys = {
-        'root': ['humn', operator.add, 'aaaa'],
+        'root': ('humn', operator.add, 'aaaa'),
         'humn': 2,
         'aaaa': 5
     }
@@ -94,16 +111,10 @@ def test_humn_needs_to_yell():
     monkeys = fetch_monkeys('sample_data/day21.txt')
     assert humn_needs_to_yell(monkeys) == 301
 
-    # ((4 + (2 * ('humn' - 3))) // 4) == 150
-    # outside looks like (tuple, op, int), so:
-    ## target becomes result of  150 , opposite-of-op, int
-    ## move onto tuple and keep repeating
-    ## if you see (int, op, tuple) do int, opposite-of-op, target
-    ## if you see 'humn' return target
-
-
 #-----------------------------------------------------#
 
 if __name__ == "__main__":
     monkeys = fetch_monkeys('data/day21.txt')
-    print(yell(monkeys, 'root'))
+    print(humn_needs_to_yell(monkeys))
+
+

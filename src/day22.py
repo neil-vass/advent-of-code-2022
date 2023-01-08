@@ -10,35 +10,58 @@ def neighbours(x,y):
     yield (x, y-1)
     yield (x, y+1)
 
+class Line:
+    def __init__(self):
+        self.start = None
+        self.end = None
+        self.walls = []
 
-def create_board_map(maplines):
-    board = {}
-    for x, ln in enumerate(maplines):
-        first = last = None
-        for y, char in enumerate(ln.rstrip()):
-            if char == ' ':
-                continue
-            elif char == '.':
-                board[(x,y)] = set()
-                for neighbour in neighbours(x,y):
-                    if neighbour in board and board[neighbour] != 'wall':
-                        board[(x,y)].add(neighbour)
-                        board[neighbour].add((x,y))
-            elif char == '#':
-                board[(x,y)] = 'wall'
+    def move_endward(self, current_pos, tiles):
+        raise Exception('todo')
 
-            if first is None:
-                first = last = (x,y)
-            elif y > last[1]:
-                last = (x,y)
-            
-        # Check for wraparound
-        if board[first] != 'wall' and board[last] != 'wall':
-            board[first].add(last)
-            board[last].add(first)
+    def move_startward(self, current_pos, tiles):
+        raise Exception('todo')
 
-    return board
 
+class Board:
+    def __init__(self, maplines):
+        self.rows, self.cols = Board._create_map(maplines)
+
+    def _create_map(maplines):
+        rows = {}
+        cols = {}
+        for x, ln in enumerate(maplines, start=1):
+            rows[x] = Line()
+            for y, char in enumerate(ln.rstrip(), start=1):
+                if y not in cols:
+                    cols[y] = Line()
+                if char == ' ':
+                    continue
+                if rows[x].start is None:
+                    rows[x].start = rows[x].end = y
+                if cols[y].start is None:
+                    cols[y].start = cols[y].end = x
+
+                rows[x].end = max(y, rows[x].end)
+                cols[y].end = max(x, cols[y].end)
+                
+                if char == '#':
+                    rows[x].walls.append(y)  
+                    cols[y].walls.append(x)
+
+        return rows, cols
+
+    def move_right(self, current_pos, tiles):
+        pass
+
+    def move_left(self, current_pos, tiles):
+        pass
+
+    def move_down(self, current_pos, tiles):
+        pass
+
+    def move_up(self, current_pos, tiles):
+        pass
 
 
 
@@ -51,29 +74,37 @@ def test_basics():
     assert path == '10R5L5R10L4R5L5'
 
 def test_create_simple_map():
-    maplines = [
+    board = Board([
         '..',
-        '.#'
-    ]
-    board = create_board_map(maplines)
-    assert len(board) == 4
-    assert board[0,0] == {(0,1), (1,0)}
-    assert board[0,1] == {(0,0)}
-    assert board[1,0] == {(0,0)}
-    assert board[1,1] == 'wall'
+        '.#'])
+    assert len(board.rows) == 2
+    assert board.rows[1].start == 1
+    assert board.rows[1].walls == []
+    assert len(board.cols) == 2
+    assert board.cols[2].start == 1
+    assert board.cols[2].end == 2
+    assert board.cols[2].walls == [2]
+
+    
+def test_move_within_board_limits():
+    board = Board([
+        '...',
+        '.#.'])
+    assert board.move_right((1,1), 2) == (1,3) # Can step right
+    assert board.move_right((2,1), 2) == (2,1) # Blocked by wall
+    assert board.move_left((1,3), 1) == (1,2) 
+    assert board.move_down((1,1), 1) == (2,1)
+    assert board.move_down((1,2), 1) == (1,2) # Blocked by wall
+    assert board.move_up((2,3), 1) == (1,3)
+    
 
 def test_map_with_wraparound():
-    maplines = [
+    board = Board([
         ' ....',
         '  ..#',
         ' .'
-    ]
-    board = create_board_map(maplines)
-    assert len(board) == 8
-    assert board[0,1] == {(0,2), (0,4), (2,1)}
-    assert board[0,2] == {(0,1), (0,3), (1,2)}
-    assert board[1,2] == {(0,2), (1,3)} # Wall bocks wraparound
-    assert board[2,1] == {(0,1)}
+    ])
+    
 
     
 

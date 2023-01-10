@@ -15,12 +15,23 @@ class Line:
         self.start = None
         self.end = None
         self.walls = []
+    
+    def move_endward(self, current_pos, tiles):      
+        if self.walls:
+            wrapped_walls = self.walls + [(w + self.end) for w in self.walls]
+            farthest_move = (next(w for w in wrapped_walls if w > current_pos) -1) - current_pos
+            tiles = min(tiles, farthest_move)
+        width = self.end - self.start + 1
+        return ((current_pos - self.start + tiles) % width) + self.start
 
-    def move_endward(self, current_pos, tiles):
-        raise Exception('todo')
 
     def move_startward(self, current_pos, tiles):
-        raise Exception('todo')
+        if self.walls:
+            wrapped_walls = reversed([(w + self.end) for w in self.walls] + self.walls)
+            farthest_move = current_pos - (next(w for w in wrapped_walls if w < current_pos) +1)
+            tiles = min(tiles, farthest_move)
+        width = self.end - self.start + 1
+        return ((current_pos - self.start - tiles) % width) + self.start
 
 
 class Board:
@@ -51,17 +62,17 @@ class Board:
 
         return rows, cols
 
-    def move_right(self, current_pos, tiles):
-        pass
-
-    def move_left(self, current_pos, tiles):
-        pass
-
-    def move_down(self, current_pos, tiles):
-        pass
-
-    def move_up(self, current_pos, tiles):
-        pass
+    def move(self, current_pos, tiles, dir):
+        x,y = current_pos
+        if dir == '>':
+            y = self.rows[x].move_endward(y, tiles)
+        if dir == '<':
+            y = self.rows[x].move_startward(y, tiles)
+        if dir == 'v':
+            x = self.cols[y].move_endward(x, tiles)
+        if dir == '^':
+            x = self.cols[y].move_startward(x, tiles)
+        return (x,y)
 
 
 
@@ -90,23 +101,23 @@ def test_move_within_board_limits():
     board = Board([
         '...',
         '.#.'])
-    assert board.move_right((1,1), 2) == (1,3) # Can step right
-    assert board.move_right((2,1), 2) == (2,1) # Blocked by wall
-    assert board.move_left((1,3), 1) == (1,2) 
-    assert board.move_down((1,1), 1) == (2,1)
-    assert board.move_down((1,2), 1) == (1,2) # Blocked by wall
-    assert board.move_up((2,3), 1) == (1,3)
+    assert board.move((1,1), 2, '>') == (1,3) # Can step right
+    assert board.move((2,1), 2, '>') == (2,1) # Blocked by wall
+    assert board.move((1,3), 1, '<') == (1,2) 
+    assert board.move((1,1), 1, 'v') == (2,1)
+    assert board.move((1,2), 1, 'v') == (1,2) # Blocked by wall
+    assert board.move((2,3), 1, '^') == (1,3)
     
 
 def test_map_with_wraparound():
     board = Board([
         ' ....',
         '  ..#',
-        ' .'
+        '    .'
     ])
-    
-
-    
+    assert board.move((1,2), 8, '>') == (1,2) # Move a multiple of width
+    assert board.move((2,3), 1, 'v') == (1,3) # Pop out at top
+    assert board.move((1,5), 5, 'v') == (1,5) # Blocked immediately
 
 
 

@@ -11,27 +11,38 @@ class Line:
         self.end = None
         self.walls = []
     
-    def move_endward(self, current_pos, tiles):     
-        width = self.end - self.start + 1 
-        if self.walls:
-            wrapped_walls = self.walls + [(w + width) for w in self.walls]
-            farthest_move = (next(w for w in wrapped_walls if w > current_pos) -1) - current_pos
-            tiles = min(tiles, farthest_move)
-        return ((current_pos - self.start + tiles) % width) + self.start
+    def move_endward(self, current_pos, tiles):  
+        farthest_move = next((w-1 for w in self.walls if w > current_pos), self.end) - current_pos
+        dist = min(tiles, farthest_move) 
+        new_pos = current_pos + dist
+        remaining_move = (tiles - dist) if new_pos == self.end else 0
+        return new_pos, remaining_move
 
 
     def move_startward(self, current_pos, tiles):
-        width = self.end - self.start + 1
-        if self.walls:
-            wrapped_walls = reversed([(w - width) for w in self.walls] + self.walls)
-            farthest_move = current_pos - (next(w for w in wrapped_walls if w < current_pos) +1)
-            tiles = min(tiles, farthest_move)
-        return ((current_pos - self.start - tiles) % width) + self.start
+        farthest_move = current_pos - next(reversed(w+1 for w in self.walls if w < current_pos), self.start)
+        dist = min(tiles, farthest_move)
+        new_pos = current_pos - dist
+        remaining_move = (tiles - dist) if new_pos == self.start else 0
+        return new_pos, remaining_move
 
 
-class Board:
-    def __init__(self, maplines):
-        self.rows, self.cols = Board._create_map(maplines)
+# Class Cube, very like the Board
+# Rows and cols work the same, EXCEPT we need new wrapping rules
+# For wrap past the end: 
+#    - which line do you pop out onto? 
+#    - And which position (start or end)
+#    - Interesting: the lines don't care about facing, but we'll need to track that.
+#    - (e.g. sample_data: if you leave a row in 4 facing >, you appear in a col in 6 facing v)
+# Special consideration: if there's a wall in the line you're wrapping onto ... you don't wrap.
+# (so need to look ahead just to the start or end).
+# WOW there's a lot.
+# Actually! Instead of trying to wrap, let's just move as far as we can on each line,
+# Then back to Cube to consider next steps. 
+class Cube:
+    def __init__(self, maplines, folding='sample'):
+        self.rows, self.cols = Cube._create_map(maplines)
+        self._create_wrapping_rules(folding)
 
     def _create_map(maplines):
         rows = {}
@@ -57,6 +68,90 @@ class Board:
 
         return rows, cols
 
+    # Cols
+    # 1^ to 2v, map reversed
+    # 2^ to 1v, map reversed
+    # 2v to 5^, map reversed
+    # 3^ to 1> (Row!)
+    # 3v to 5> (Row!), map reversed
+    # 5v to 2^, map reversed
+    # 6^ to 4< (Row!), map reversed
+    # 6v to 2> (Row!), map reversed
+
+    # Rows
+    # 1< to 3v (Col!)
+    # 1> to 6<, map reversed 
+    # 2< to 6^ (Col!), map reversed
+    # 4> to 6v (Col!), map reversed
+    # 5< to 3^ (Col!), map reversed
+    # 6> to 1<, map reversed
+    def _create_wrapping_rules(self, folding):
+        if folding == 'sample':
+            face_size = 4
+            
+            for row_idx in range(1, face_size+1):
+                offset = 0
+                # 1< to 3v (Col!)
+                wrap_idx = face_size + row_idx
+                self.rows[offset+row_idx].startward_wrap = (self.cols[wrap_idx], 'v')
+                # 1> to 6<, map reversed 
+                wrap_idx = 2 * face_size + (1 + face_size - row_idx)
+                self.rows[offset+row_idx].endward_wrap = (self.rows[wrap_idx], '<')
+                
+                offset += face_size
+                # 2< to 6^ (Col!), map reversed
+                wrap_idx = 3 * face_size + (1 + face_size - row_idx)
+                self.rows[offset+row_idx].startward_wrap = (self.cols[wrap_idx], '^')
+                # 4> to 6v (Col!), map reversed
+                wrap_idx = 3 * face_size + (1 + face_size - row_idx)
+                self.rows[offset+row_idx].endward_wrap = (self.cols[wrap_idx], 'v')
+
+                offset += face_size
+                # 5< to 3^ (Col!), map reversed
+                wrap_idx = 3 * face_size + (1 + face_size - row_idx)
+                self.rows[offset+row_idx].startward_wrap = (self.cols[wrap_idx], '^')
+                # 6> to 1<, map reversed
+                wrap_idx = (1 + face_size - row_idx)
+                self.rows[offset+row_idx].endward_wrap = (self.rows[wrap_idx], '<')
+            
+            for col_idx in range(1, face_size+1):
+                offset = 0
+                # 2^ to 1v, map reversed
+                wrap_idx = 2 * face_size + (1 + face_size - col_idx)
+                self.cols[offset+col_idx].startward_wrap = (self.cols[wrap_idx], 'v')
+                # 2v to 5^, map reversed
+                wrap_idx = 2 * face_size + (1 + face_size - col_idx)
+                self.cols[offset+col_idx].endward_wrap = (self.cols[wrap_idx], '^')
+
+                offset += face_size
+                # 3^ to 1> (Row!)
+                wrap_idx = col_idx
+                self.cols[offset+col_idx].startward_wrap = (self.rows[wrap_idx], '>')
+                # 3v to 5> (Row!), map reversed
+                wrap_idx = 2 * face_size + (1 + face_size - col_idx)
+                self.cols[offset+col_idx].endward_wrap = (self.rows[wrap_idx], '>')
+
+                offset += face_size
+                # 1^ to 2v, map reversed
+                wrap_idx = (1 + face_size - col_idx)
+                self.cols[offset+col_idx].startward_wrap = (self.cols[wrap_idx], 'v')
+                # 5v to 2^, map reversed
+                wrap_idx = (1 + face_size - col_idx)
+                self.cols[offset+col_idx].endward_wrap = (self.cols[wrap_idx], '^')
+
+                offset += face_size
+                # 6^ to 4< (Row!), map reversed
+                wrap_idx = face_size + (1 + face_size - col_idx)
+                self.cols[offset+col_idx].endward_wrap = (self.rows[wrap_idx], '<')
+                # 6v to 2> (Row!), map reversed
+                wrap_idx = face_size + (1 + face_size - col_idx)
+                self.cols[offset+col_idx].endward_wrap = (self.rows[wrap_idx], '>')
+
+
+    # TODO: lines now return how far the move still has to go.
+    # Check the line's 'starward_wrap' or 'endward_wrap'
+    # If there's no wall blocking, advance to new line, call move with new params.
+    # At end: return dir as well as pos.
     def move(self, current_pos, tiles, dir):
         x,y = current_pos
         if dir == '>':
@@ -100,55 +195,23 @@ def test_basics():
     assert maplines[0] == '        ...#'
     assert path == '10R5L5R10L4R5L5'
 
-def test_create_simple_map():
-    board = Board([
-        '..',
-        '.#'])
-    assert len(board.rows) == 2
-    assert board.rows[1].start == 1
-    assert board.rows[1].walls == []
-    assert len(board.cols) == 2
-    assert board.cols[2].start == 1
-    assert board.cols[2].end == 2
-    assert board.cols[2].walls == [2]
-
-    
-def test_move_within_board_limits():
-    board = Board([
-        '...',
-        '.#.'])
-    assert board.move((1,1), 2, '>') == (1,3) # Can step right
-    assert board.move((2,1), 2, '>') == (2,1) # Blocked by wall
-    assert board.move((1,3), 1, '<') == (1,2) 
-    assert board.move((1,1), 1, 'v') == (2,1)
-    assert board.move((1,2), 1, 'v') == (1,2) # Blocked by wall
-    assert board.move((2,3), 1, '^') == (1,3)
-    
-def test_map_with_wraparound():
-    board = Board([
-        ' ....',
-        '  ..#',
-        '    .'
-    ])
-    assert board.move((1,2), 8, '>') == (1,2) # Move a multiple of width
-    assert board.move((2,3), 1, 'v') == (1,3) # Pop out at top
-    assert board.move((1,5), 5, 'v') == (1,5) # Blocked immediately
-
-def test_hit_walls_after_wraparound():
+def test_move_round_cube():
     maplines, path = fetch_data('sample_data/day22.txt')
-    board = Board(maplines)
-    assert board.move((6,4), 5, 'v') == (8,4) # Wall at top blocks wraparound
-    assert board.move((6,3), 5, '^') == (8,3) # Wrap off top, then wall below where you started blocks
-    assert board.move((7,10), 20, '>') == (7,2) # Wrap and make sure we hit first wall
-    assert board.move((7,2), 20, '<') == (7,9) # As above, other way
+    cube = Cube(maplines)
+    assert cube.move(((6,12),'>'), 1) == ((9,15),'v') # A to B puzzle example
+    assert cube.move(((8,2),'^'), 1) == ((9,15),'v') # C to D puzzle example
 
+def test_wall_blocks_moving_round():
+    maplines, path = fetch_data('sample_data/day22.txt')
+    cube = Cube(maplines)
+    assert cube.move(((5,7),'^'), 1) == ((5,7),'^') # E puzzle example
 
-def test_follow_path():
+def _test_follow_path():
     maplines, path = fetch_data('sample_data/day22.txt')
     board = Board(maplines)
     assert board.follow_path(path) == ((6,8), '>')
 
-def test_final_password():
+def _test_final_password():
     assert final_password('sample_data/day22.txt') == 6032
 
 #-----------------------------------------------------#
@@ -157,13 +220,4 @@ if __name__ == "__main__":
     print(final_password('data/day22.txt'))
 
 
-# Class Cube, very like the Board
-# Rows and cols work the same, EXCEPT we need new wrapping rules
-# For wrap past the end: 
-#    - which line do you pop out onto? 
-#    - And which position (start or end)
-#    - Interesting: the lines don't care about facing, but we'll need to track that.
-#    - (e.g. sample_data: if you leave a row in 4 facing >, you appear in a col in 6 facing v)
-# Special consideration: if there's a wall in the line you're wrapping onto ... you don't wrap.
-# (so need to look ahead just to the start or end).
-# WOW there's a lot.
+

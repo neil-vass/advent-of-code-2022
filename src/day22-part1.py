@@ -155,3 +155,15 @@ def test_final_password():
 
 if __name__ == "__main__":
     print(final_password('data/day22.txt'))
+
+
+# Class Cube, very like the Board
+# Rows and cols work the same, EXCEPT we need new wrapping rules
+# For wrap past the end: 
+#    - which line do you pop out onto? 
+#    - And which position (start or end)
+#    - Interesting: the lines don't care about facing, but we'll need to track that.
+#    - (e.g. sample_data: if you leave a row in 4 facing >, you appear in a col in 6 facing v)
+# Special consideration: if there's a wall in the line you're wrapping onto ... you don't wrap.
+# (so need to look ahead just to the start or end).
+# WOW there's a lot.

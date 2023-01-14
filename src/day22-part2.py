@@ -3,7 +3,18 @@ import re
 def fetch_data(path):
     with open(path, 'r') as f:
         lines = f.readlines()
-        return [ln.rstrip() for ln in lines[:-2]], lines[-1].rstrip()
+        maplines = [ln.rstrip() for ln in lines[:-2]]
+        path = lines[-1].rstrip()
+        if len(path) == 0:
+            raise Exception('Path has no instructions!')
+        return maplines, path
+
+def is_row(dir):
+        return dir in '<>'
+
+def is_start(dir):
+    return dir in '<^'
+
 
 class Line:
     def __init__(self):
@@ -42,7 +53,12 @@ class Line:
 class Cube:
     def __init__(self, maplines, folding='sample'):
         self.rows, self.cols = Cube._create_map(maplines)
-        self._create_wrapping_rules(folding)
+        if folding == 'sample':
+            self.face_size = 4
+            self._create_wrapping_rules_for_sample()
+        else:
+            self.face_size = 50
+            self._create_wrapping_rules_for_actual()
 
     def _create_map(maplines):
         rows = {}
@@ -85,87 +101,152 @@ class Cube:
     # 4> to 6v (Col!), map reversed
     # 5< to 3^ (Col!), map reversed
     # 6> to 1<, map reversed
-    def _create_wrapping_rules(self, folding):
-        if folding == 'sample':
-            face_size = 4
+
+    def set_wrap_rule_for_face(self, from_face_pos, from_dir, to_face_pos, to_dir, map_reversed=False):
+        from_offset = from_face_pos * self.face_size
+        to_offset = to_face_pos * self.face_size
+        from_lines = self.rows if from_dir in '<>' else self.cols
+        to_lines = self.rows if to_dir in '<>' else self.cols
+
+        for line_num in range(1, self.face_size+1):
+            from_idx = from_offset + line_num
+            if map_reversed:
+                to_idx = to_offset + (1 + self.face_size - line_num)
+            else:
+                to_idx = to_offset + line_num
+
+            # Set wrapping mapping, unless we're going to immediately hit a wall.
+            first_pos_on_wrapped_line = to_lines[to_idx].start if is_start(to_dir) else to_lines[to_idx].end
+            if first_pos_on_wrapped_line in to_lines[to_idx].walls:
+                continue
+
+            if is_row(to_dir):
+                if is_start(to_dir):
+                    wrapping_mapping = ((to_idx, to_lines[to_idx].start), to_dir)
+                else:
+                    wrapping_mapping = ((to_idx, to_lines[to_idx].end), to_dir)
+            else:
+                if is_start(to_dir):
+                    wrapping_mapping = ((to_lines[to_idx].start, to_idx), to_dir)
+                else:
+                    wrapping_mapping = ((to_lines[to_idx].end, to_idx), to_dir)
+
+            if is_start(from_dir):
+                from_lines[from_idx].startward_wrap = wrapping_mapping
+            else:
+                from_lines[from_idx].endward_wrap = wrapping_mapping
+
+
+    # We're wrapping this cube 
+    # ..1.
+    # 234.
+    # ..56 
+    def _create_wrapping_rules_for_sample(self):
+        # "From" for all the rows
+        # 1< to 3v 
+        self.set_wrap_rule_for_face(from_face_pos=0, from_dir='<', to_face_pos=1, to_dir='v')
+        # 1> to 6<, map reversed 
+        self.set_wrap_rule_for_face(from_face_pos=0, from_dir='>', to_face_pos=2, to_dir='<')
+
+        for row_idx in range(1, self.face_size+1):
+            offset = 0
             
-            for row_idx in range(1, face_size+1):
-                offset = 0
-                # 1< to 3v (Col!)
-                wrap_idx = face_size + row_idx
-                if self.cols[wrap_idx].start not in self.cols[wrap_idx].walls:
-                    self.rows[offset+row_idx].startward_wrap = ((self.cols[wrap_idx].start, wrap_idx), 'v')
-                # 1> to 6<, map reversed 
-                wrap_idx = 2 * face_size + (1 + face_size - row_idx)
-                if self.rows[wrap_idx].end not in self.rows[wrap_idx].walls:
-                    self.rows[offset+row_idx].endward_wrap = ((wrap_idx, self.rows[wrap_idx].end), '<')
-                
-                offset += face_size
-                # 2< to 6^ (Col!), map reversed
-                wrap_idx = 3 * face_size + (1 + face_size - row_idx)
-                if self.cols[wrap_idx].end not in self.cols[wrap_idx].walls:
-                    self.rows[offset+row_idx].startward_wrap = ((self.cols[wrap_idx].end, wrap_idx), '^')
-                # 4> to 6v (Col!), map reversed
-                wrap_idx = 3 * face_size + (1 + face_size - row_idx)
-                if self.cols[wrap_idx].start not in self.cols[wrap_idx].walls:
-                    self.rows[offset+row_idx].endward_wrap = ((self.cols[wrap_idx].start, wrap_idx), 'v')
-
-                offset += face_size
-                # 5< to 3^ (Col!), map reversed
-                wrap_idx = 3 * face_size + (1 + face_size - row_idx)
-                if self.cols[wrap_idx].end not in self.cols[wrap_idx].walls:
-                    self.rows[offset+row_idx].startward_wrap = ((self.cols[wrap_idx].end, wrap_idx), '^')
-                # 6> to 1<, map reversed
-                wrap_idx = (1 + face_size - row_idx)
-                if self.rows[wrap_idx].end not in self.rows[wrap_idx].walls:
-                    self.rows[offset+row_idx].endward_wrap = ((wrap_idx, self.rows[wrap_idx].end), '<')
             
-            for col_idx in range(1, face_size+1):
-                offset = 0
-                # 2^ to 1v, map reversed
-                wrap_idx = 2 * face_size + (1 + face_size - col_idx)
-                if self.cols[wrap_idx].start not in self.cols[wrap_idx].walls:
-                    self.cols[offset+col_idx].startward_wrap = ((self.cols[wrap_idx].start, wrap_idx), 'v')
-                # 2v to 5^, map reversed
-                wrap_idx = 2 * face_size + (1 + face_size - col_idx)
-                if self.cols[wrap_idx].end not in self.cols[wrap_idx].walls:
-                    self.cols[offset+col_idx].endward_wrap = ((self.cols[wrap_idx].end, wrap_idx), '^')
+            # 1> to 6<, map reversed 
+            #wrap_idx = 2 * self.face_size + (1 + self.face_size - row_idx)
+            #if self.rows[wrap_idx].end not in self.rows[wrap_idx].walls:
+            #    self.rows[offset+row_idx].endward_wrap = ((wrap_idx, self.rows[wrap_idx].end), '<')
+            
+            offset += self.face_size
+            # 2< to 6^ (Col!), map reversed
+            wrap_idx = 3 * self.face_size + (1 + self.face_size - row_idx)
+            if self.cols[wrap_idx].end not in self.cols[wrap_idx].walls:
+                self.rows[offset+row_idx].startward_wrap = ((self.cols[wrap_idx].end, wrap_idx), '^')
+            # 4> to 6v (Col!), map reversed
+            wrap_idx = 3 * self.face_size + (1 + self.face_size - row_idx)
+            if self.cols[wrap_idx].start not in self.cols[wrap_idx].walls:
+                self.rows[offset+row_idx].endward_wrap = ((self.cols[wrap_idx].start, wrap_idx), 'v')
 
-                offset += face_size
-                # 3^ to 1> (Row!)
-                wrap_idx = col_idx
-                if self.rows[wrap_idx].start not in self.rows[wrap_idx].walls:
-                    self.cols[offset+col_idx].startward_wrap = ((wrap_idx, self.rows[wrap_idx].start), '>')
-                # 3v to 5> (Row!), map reversed
-                wrap_idx = 2 * face_size + (1 + face_size - col_idx)
-                if self.rows[wrap_idx].start not in self.rows[wrap_idx].walls:
-                    self.cols[offset+col_idx].endward_wrap = ((wrap_idx, self.rows[wrap_idx].start), '>')
+            offset += self.face_size
+            # 5< to 3^ (Col!), map reversed
+            wrap_idx = 3 * self.face_size + (1 + self.face_size - row_idx)
+            if self.cols[wrap_idx].end not in self.cols[wrap_idx].walls:
+                self.rows[offset+row_idx].startward_wrap = ((self.cols[wrap_idx].end, wrap_idx), '^')
+            # 6> to 1<, map reversed
+            wrap_idx = (1 + self.face_size - row_idx)
+            if self.rows[wrap_idx].end not in self.rows[wrap_idx].walls:
+                self.rows[offset+row_idx].endward_wrap = ((wrap_idx, self.rows[wrap_idx].end), '<')
+        
+        for col_idx in range(1, self.face_size+1):
+            offset = 0
+            # 2^ to 1v, map reversed
+            wrap_idx = 2 * self.face_size + (1 + self.face_size - col_idx)
+            if self.cols[wrap_idx].start not in self.cols[wrap_idx].walls:
+                self.cols[offset+col_idx].startward_wrap = ((self.cols[wrap_idx].start, wrap_idx), 'v')
+            # 2v to 5^, map reversed
+            wrap_idx = 2 * self.face_size + (1 + self.face_size - col_idx)
+            if self.cols[wrap_idx].end not in self.cols[wrap_idx].walls:
+                self.cols[offset+col_idx].endward_wrap = ((self.cols[wrap_idx].end, wrap_idx), '^')
 
-                offset += face_size
-                # 1^ to 2v, map reversed
-                wrap_idx = (1 + face_size - col_idx)
-                if self.cols[wrap_idx].start not in self.cols[wrap_idx].walls:
-                    self.cols[offset+col_idx].startward_wrap = ((self.cols[wrap_idx].start, wrap_idx), 'v')
-                # 5v to 2^, map reversed
-                wrap_idx = (1 + face_size - col_idx)
-                if self.cols[wrap_idx].end not in self.cols[wrap_idx].walls:
-                    self.cols[offset+col_idx].endward_wrap = ((self.cols[wrap_idx].end, wrap_idx), '^')
+            offset += self.face_size
+            # 3^ to 1> (Row!)
+            wrap_idx = col_idx
+            if self.rows[wrap_idx].start not in self.rows[wrap_idx].walls:
+                self.cols[offset+col_idx].startward_wrap = ((wrap_idx, self.rows[wrap_idx].start), '>')
+            # 3v to 5> (Row!), map reversed
+            wrap_idx = 2 * self.face_size + (1 + self.face_size - col_idx)
+            if self.rows[wrap_idx].start not in self.rows[wrap_idx].walls:
+                self.cols[offset+col_idx].endward_wrap = ((wrap_idx, self.rows[wrap_idx].start), '>')
 
-                offset += face_size
-                # 6^ to 4< (Row!), map reversed
-                wrap_idx = face_size + (1 + face_size - col_idx)
-                if self.rows[wrap_idx].end not in self.rows[wrap_idx].walls:
-                    self.cols[offset+col_idx].endward_wrap = ((wrap_idx, self.rows[wrap_idx].end), '<')
-                # 6v to 2> (Row!), map reversed
-                wrap_idx = face_size + (1 + face_size - col_idx)
-                if self.rows[wrap_idx].start not in self.rows[wrap_idx].walls:
-                    self.cols[offset+col_idx].endward_wrap = ((wrap_idx, self.rows[wrap_idx].start), '>')
+            offset += self.face_size
+            # 1^ to 2v, map reversed
+            wrap_idx = (1 + self.face_size - col_idx)
+            if self.cols[wrap_idx].start not in self.cols[wrap_idx].walls:
+                self.cols[offset+col_idx].startward_wrap = ((self.cols[wrap_idx].start, wrap_idx), 'v')
+            # 5v to 2^, map reversed
+            wrap_idx = (1 + self.face_size - col_idx)
+            if self.cols[wrap_idx].end not in self.cols[wrap_idx].walls:
+                self.cols[offset+col_idx].endward_wrap = ((self.cols[wrap_idx].end, wrap_idx), '^')
 
+            offset += self.face_size
+            # 6^ to 4< (Row!), map reversed
+            wrap_idx = self.face_size + (1 + self.face_size - col_idx)
+            if self.rows[wrap_idx].end not in self.rows[wrap_idx].walls:
+                self.cols[offset+col_idx].endward_wrap = ((wrap_idx, self.rows[wrap_idx].end), '<')
+            # 6v to 2> (Row!), map reversed
+            wrap_idx = self.face_size + (1 + self.face_size - col_idx)
+            if self.rows[wrap_idx].start not in self.rows[wrap_idx].walls:
+                self.cols[offset+col_idx].endward_wrap = ((wrap_idx, self.rows[wrap_idx].start), '>')
 
-    # TODO: lines now return how far the move still has to go.
-    # Check the line's 'startward_wrap' or 'endward_wrap'
-    # If there's no wall blocking, advance to new line, call move with new params.
-    # At end: return dir as well as pos.
+    # We're wrapping this cube 
+    # .12
+    # .3.
+    # 45.
+    # 6.. 
+    def _create_wrapping_rules_for_actual(self):
+        
+
+        # Rows
+        # 1< to 4>, map reversed
+
+        # 2> to 5<, map reversed
+        # 3< to 4v (col)
+        # 3> to 2^ (col)
+        # 4< to 1>, map reversed
+        # 5> to 2<, map reversed
+        # 6< to 1v (col)
+        # 6> to 5^ (col)
+
+        # Cols
+        # 4^ to 3> (row)
+        # 6v to 2v
+        # 1^ to 6> (row)
+        # 5v to 6< (row)
+        # 2^ to 6^
+        # 2v to 3< (row)
+    
+        pass
+
     def move(self, current_pos, dir, tiles):
         x,y = current_pos
         if dir == '>':
@@ -195,15 +276,13 @@ class Cube:
         directions = '>v<^'
         current_pos = (1, self.rows[1].start)
         facing = '>'
-        history = [(current_pos, facing)]
         for instruction in re.findall(r'(\d+|L|R)', path):
             if instruction.isdigit():
-                current_pos = self.move(current_pos, int(instruction), facing)
+                current_pos, facing = self.move(current_pos, dir=facing, tiles=int(instruction))
             elif instruction == 'L':
                 facing = directions[(directions.index(facing) - 1) % len(directions)]
             elif instruction == 'R':
                 facing = directions[(directions.index(facing) + 1) % len(directions)]
-            history.append((current_pos, facing))
         return current_pos, facing
 
 
@@ -232,13 +311,13 @@ def test_wall_blocks_moving_round():
     cube = Cube(maplines)
     assert cube.move((5,7),'^', 1) == ((5,7),'^') # E puzzle example
 
-def _test_follow_path():
+def test_follow_path():
     maplines, path = fetch_data('sample_data/day22.txt')
-    board = Board(maplines)
-    assert board.follow_path(path) == ((6,8), '>')
+    cube = Cube(maplines)
+    assert cube.follow_path(path) == ((5,7), '^')
 
-def _test_final_password():
-    assert final_password('sample_data/day22.txt') == 6032
+def test_final_password():
+    assert final_password('sample_data/day22.txt') == 5031
 
 #-----------------------------------------------------#
 

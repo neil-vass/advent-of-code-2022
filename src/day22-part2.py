@@ -93,100 +93,72 @@ class Cube:
                 offset = 0
                 # 1< to 3v (Col!)
                 wrap_idx = face_size + row_idx
-                if self.cols[wrap_idx].start in self.cols[wrap_idx].walls:
-                    self.rows[offset+row_idx].startward_wrap = None
-                else:
+                if self.cols[wrap_idx].start not in self.cols[wrap_idx].walls:
                     self.rows[offset+row_idx].startward_wrap = ((self.cols[wrap_idx].start, wrap_idx), 'v')
                 # 1> to 6<, map reversed 
                 wrap_idx = 2 * face_size + (1 + face_size - row_idx)
-                if self.rows[wrap_idx].end in self.rows[wrap_idx].walls:
-                    self.rows[offset+row_idx].endward_wrap = None
-                else:
+                if self.rows[wrap_idx].end not in self.rows[wrap_idx].walls:
                     self.rows[offset+row_idx].endward_wrap = ((wrap_idx, self.rows[wrap_idx].end), '<')
                 
                 offset += face_size
                 # 2< to 6^ (Col!), map reversed
                 wrap_idx = 3 * face_size + (1 + face_size - row_idx)
-                if self.cols[wrap_idx].end in self.cols[wrap_idx].walls:
-                    self.rows[offset+row_idx].startward_wrap = None
-                else:
+                if self.cols[wrap_idx].end not in self.cols[wrap_idx].walls:
                     self.rows[offset+row_idx].startward_wrap = ((self.cols[wrap_idx].end, wrap_idx), '^')
                 # 4> to 6v (Col!), map reversed
                 wrap_idx = 3 * face_size + (1 + face_size - row_idx)
-                if self.cols[wrap_idx].start in self.cols[wrap_idx].walls:
-                    self.rows[offset+row_idx].endward_wrap = None
-                else:
+                if self.cols[wrap_idx].start not in self.cols[wrap_idx].walls:
                     self.rows[offset+row_idx].endward_wrap = ((self.cols[wrap_idx].start, wrap_idx), 'v')
 
                 offset += face_size
                 # 5< to 3^ (Col!), map reversed
                 wrap_idx = 3 * face_size + (1 + face_size - row_idx)
-                if self.cols[wrap_idx].end in self.cols[wrap_idx].walls:
-                    self.rows[offset+row_idx].startward_wrap = None
-                else:
+                if self.cols[wrap_idx].end not in self.cols[wrap_idx].walls:
                     self.rows[offset+row_idx].startward_wrap = ((self.cols[wrap_idx].end, wrap_idx), '^')
                 # 6> to 1<, map reversed
                 wrap_idx = (1 + face_size - row_idx)
-                if self.rows[wrap_idx].end in self.rows[wrap_idx].walls:
-                    self.rows[offset+row_idx].endward_wrap = None
-                else:
+                if self.rows[wrap_idx].end not in self.rows[wrap_idx].walls:
                     self.rows[offset+row_idx].endward_wrap = ((wrap_idx, self.rows[wrap_idx].end), '<')
             
             for col_idx in range(1, face_size+1):
                 offset = 0
                 # 2^ to 1v, map reversed
                 wrap_idx = 2 * face_size + (1 + face_size - col_idx)
-                if self.cols[wrap_idx].start in self.cols[wrap_idx].walls:
-                    self.cols[offset+row_idx].startward_wrap = None
-                else:
+                if self.cols[wrap_idx].start not in self.cols[wrap_idx].walls:
                     self.cols[offset+col_idx].startward_wrap = ((self.cols[wrap_idx].start, wrap_idx), 'v')
                 # 2v to 5^, map reversed
                 wrap_idx = 2 * face_size + (1 + face_size - col_idx)
-                if self.cols[wrap_idx].end in self.cols[wrap_idx].walls:
-                    self.cols[offset+row_idx].endward_wrap = None
-                else:
+                if self.cols[wrap_idx].end not in self.cols[wrap_idx].walls:
                     self.cols[offset+col_idx].endward_wrap = ((self.cols[wrap_idx].end, wrap_idx), '^')
 
                 offset += face_size
                 # 3^ to 1> (Row!)
                 wrap_idx = col_idx
-                if self.rows[wrap_idx].start in self.rows[wrap_idx].walls:
-                    self.cols[offset+row_idx].startward_wrap = None
-                else:
+                if self.rows[wrap_idx].start not in self.rows[wrap_idx].walls:
                     self.cols[offset+col_idx].startward_wrap = ((wrap_idx, self.rows[wrap_idx].start), '>')
                 # 3v to 5> (Row!), map reversed
                 wrap_idx = 2 * face_size + (1 + face_size - col_idx)
-                if self.rows[wrap_idx].start in self.rows[wrap_idx].walls:
-                    self.cols[offset+row_idx].endward_wrap = None
-                else:
+                if self.rows[wrap_idx].start not in self.rows[wrap_idx].walls:
                     self.cols[offset+col_idx].endward_wrap = ((wrap_idx, self.rows[wrap_idx].start), '>')
 
                 offset += face_size
                 # 1^ to 2v, map reversed
                 wrap_idx = (1 + face_size - col_idx)
-                if self.cols[wrap_idx].start in self.cols[wrap_idx].walls:
-                    self.cols[offset+row_idx].startward_wrap = None
-                else:
+                if self.cols[wrap_idx].start not in self.cols[wrap_idx].walls:
                     self.cols[offset+col_idx].startward_wrap = ((self.cols[wrap_idx].start, wrap_idx), 'v')
                 # 5v to 2^, map reversed
                 wrap_idx = (1 + face_size - col_idx)
-                if self.cols[wrap_idx].end in self.cols[wrap_idx].walls:
-                    self.cols[offset+row_idx].endward_wrap = None
-                else:
+                if self.cols[wrap_idx].end not in self.cols[wrap_idx].walls:
                     self.cols[offset+col_idx].endward_wrap = ((self.cols[wrap_idx].end, wrap_idx), '^')
 
                 offset += face_size
                 # 6^ to 4< (Row!), map reversed
                 wrap_idx = face_size + (1 + face_size - col_idx)
-                if self.rows[wrap_idx].end in self.rows[wrap_idx].walls:
-                    self.cols[offset+row_idx].endward_wrap = None
-                else:
+                if self.rows[wrap_idx].end not in self.rows[wrap_idx].walls:
                     self.cols[offset+col_idx].endward_wrap = ((wrap_idx, self.rows[wrap_idx].end), '<')
                 # 6v to 2> (Row!), map reversed
                 wrap_idx = face_size + (1 + face_size - col_idx)
-                if self.rows[wrap_idx].start in self.rows[wrap_idx].walls:
-                    self.cols[offset+row_idx].endward_wrap = None
-                else:
+                if self.rows[wrap_idx].start not in self.rows[wrap_idx].walls:
                     self.cols[offset+col_idx].endward_wrap = ((wrap_idx, self.rows[wrap_idx].start), '>')
 
 

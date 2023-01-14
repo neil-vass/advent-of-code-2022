@@ -32,18 +32,6 @@ class Line:
         return new_pos, remaining_move
 
 
-# Class Cube, very like the Board
-# Rows and cols work the same, EXCEPT we need new wrapping rules
-# For wrap past the end: 
-#    - which line do you pop out onto? 
-#    - And which position (start or end)
-#    - Interesting: the lines don't care about facing, but we'll need to track that.
-#    - (e.g. sample_data: if you leave a row in 4 facing >, you appear in a col in 6 facing v)
-# Special consideration: if there's a wall in the line you're wrapping onto ... you don't wrap.
-# (so need to look ahead just to the start or end).
-# WOW there's a lot.
-# Actually! Instead of trying to wrap, let's just move as far as we can on each line,
-# Then back to Cube to consider next steps. 
 class Cube:
     def __init__(self, maplines, folding='sample'):
         self.rows, self.cols = Cube._create_map(maplines)
@@ -78,36 +66,17 @@ class Cube:
 
         return rows, cols
 
-    # Cols
-    # 1^ to 2v, map reversed
-    # 2^ to 1v, map reversed
-    # 2v to 5^, map reversed
-    # 3^ to 1> (Row!)
-    # 3v to 5> (Row!), map reversed
-    # 5v to 2^, map reversed
-    # 6^ to 4< (Row!), map reversed
-    # 6v to 2> (Row!), map reversed
-
-    # Rows
-    # 1< to 3v (Col!)
-    # 1> to 6<, map reversed 
-    # 2< to 6^ (Col!), map reversed
-    # 4> to 6v (Col!), map reversed
-    # 5< to 3^ (Col!), map reversed
-    # 6> to 1<, map reversed
 
     def set_wrap_rule_for_face(self, from_face_pos, from_dir, to_face_pos, to_dir, map_reversed=False):
-        from_offset = from_face_pos * self.face_size
-        to_offset = to_face_pos * self.face_size
         from_lines = self.rows if from_dir in '<>' else self.cols
         to_lines = self.rows if to_dir in '<>' else self.cols
 
         for line_num in range(1, self.face_size+1):
-            from_idx = from_offset + line_num
+            from_idx = (from_face_pos * self.face_size) + line_num
             if map_reversed:
-                to_idx = to_offset + (1 + self.face_size - line_num)
+                to_idx = (to_face_pos * self.face_size) + (1 + self.face_size - line_num)
             else:
-                to_idx = to_offset + line_num
+                to_idx = (to_face_pos * self.face_size) + line_num
 
             # Set wrapping mapping, unless we're going to immediately hit a wall.
             first_pos_on_wrapped_line = to_lines[to_idx].start if to_dir in '>v' else to_lines[to_idx].end
@@ -172,28 +141,38 @@ class Cube:
     # 45.
     # 6.. 
     def _create_wrapping_rules_for_actual(self):
-        
-
         # Rows
         # 1< to 4>, map reversed
-
+        self.set_wrap_rule_for_face(from_face_pos=0, from_dir='<', to_face_pos=2, to_dir='>', map_reversed=True)
         # 2> to 5<, map reversed
+        self.set_wrap_rule_for_face(from_face_pos=0, from_dir='>', to_face_pos=2, to_dir='<', map_reversed=True)
         # 3< to 4v (col)
+        self.set_wrap_rule_for_face(from_face_pos=1, from_dir='<', to_face_pos=0, to_dir='v')
         # 3> to 2^ (col)
+        self.set_wrap_rule_for_face(from_face_pos=1, from_dir='>', to_face_pos=2, to_dir='^')
         # 4< to 1>, map reversed
+        self.set_wrap_rule_for_face(from_face_pos=2, from_dir='<', to_face_pos=0, to_dir='>', map_reversed=True)
         # 5> to 2<, map reversed
+        self.set_wrap_rule_for_face(from_face_pos=2, from_dir='>', to_face_pos=0, to_dir='<', map_reversed=True)
         # 6< to 1v (col)
+        self.set_wrap_rule_for_face(from_face_pos=3, from_dir='<', to_face_pos=1, to_dir='v')
         # 6> to 5^ (col)
+        self.set_wrap_rule_for_face(from_face_pos=3, from_dir='>', to_face_pos=1, to_dir='^')
 
         # Cols
         # 4^ to 3> (row)
+        self.set_wrap_rule_for_face(from_face_pos=0, from_dir='^', to_face_pos=1, to_dir='>')
         # 6v to 2v
+        self.set_wrap_rule_for_face(from_face_pos=0, from_dir='v', to_face_pos=2, to_dir='v')
         # 1^ to 6> (row)
+        self.set_wrap_rule_for_face(from_face_pos=1, from_dir='^', to_face_pos=3, to_dir='>')
         # 5v to 6< (row)
+        self.set_wrap_rule_for_face(from_face_pos=1, from_dir='v', to_face_pos=3, to_dir='<')
         # 2^ to 6^
+        self.set_wrap_rule_for_face(from_face_pos=2, from_dir='^', to_face_pos=0, to_dir='^')
         # 2v to 3< (row)
+        self.set_wrap_rule_for_face(from_face_pos=2, from_dir='v', to_face_pos=1, to_dir='<')
     
-        pass
 
     def move(self, current_pos, dir, tiles):
         x,y = current_pos
@@ -234,9 +213,9 @@ class Cube:
         return current_pos, facing
 
 
-def final_password(path):
+def final_password(path, folding='sample'):
     maplines, path = fetch_data(path)
-    cube = Cube(maplines)
+    cube = Cube(maplines, folding)
     ((row, col), facing) = cube.follow_path(path)
     return 1000 * row + 4 * col + '>v<^'.index(facing)
 
@@ -270,7 +249,7 @@ def test_final_password():
 #-----------------------------------------------------#
 
 if __name__ == "__main__":
-    print(final_password('data/day22.txt'))
+    print(final_password('data/day22.txt', folding='actual'))
 
 
 

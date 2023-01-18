@@ -119,7 +119,7 @@ def test_play_to_end_with_large_example():
 def play():
     elves = fetch_data('data/day23.txt')
     field = Field(elves)
-    rounds = field.play(max_rounds=30)
+    rounds = field.play()
     print(rounds)
 
 if __name__ == "__main__":

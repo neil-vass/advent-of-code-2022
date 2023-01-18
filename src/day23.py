@@ -7,7 +7,6 @@ def fetch_data(path):
                     elves.append((x,y))
     return elves
 
-     
 
 class Field:
     def __init__(self, elves):
@@ -43,18 +42,18 @@ class Field:
                 dir = Field.direction_order[direction_idx]
                 if neighbours.isdisjoint(Field.direction_checks[dir]):
                     return adjacent_positions[dir]
-                    
+
                 direction_idx = (direction_idx + 1) % len(Field.direction_order)
         return elf
 
 
-    def play(self, rounds):
+    def play(self, max_rounds=None):
+        rounds = 0
         first_direction = 0
-        for _ in range(rounds):
-            # Propose moves
+        while True:
+            rounds += 1
             proposals = [(elf, self.propose_move(elf, first_direction)) for elf in self.elves]
 
-            # Move
             destinations = list(zip(*proposals))[1]
             new_positions = []
             for src, dest in proposals:
@@ -62,10 +61,22 @@ class Field:
                     new_positions.append(dest)
                 else:
                     new_positions.append(src)
-            self.elves = new_positions
 
-            # Next time, consider from a new direction
+            if set(self.elves) == set(new_positions):
+                break
+            
+            self.elves = new_positions
             first_direction = (first_direction + 1) % len(Field.direction_order)
+            
+            if rounds == max_rounds:
+                break
+        return rounds
+    
+
+    def empty_ground(self):
+        x, y = zip(*self.elves)
+        area = (max(x) - min(x) + 1) * (max(y) - min(y) + 1)
+        return area - len(self.elves)
 
 
 #--------------------- tests -------------------------#
@@ -78,17 +89,32 @@ def test_fetch_elves():
 def test_play_round():
     elves = fetch_data('sample_data/day23-small.txt')
     field = Field(elves)
-    field.play(rounds=1)
+    field.play(max_rounds=1)
     assert set(field.elves) == {(0,2), (0,3), (2,2), (3,3), (4,2)}
 
 def test_play_2_rounds_considers_new_direction():
     elves = fetch_data('sample_data/day23-small.txt')
     field = Field(elves)
-    field.play(rounds=2)
+    field.play(max_rounds=2)
     assert set(field.elves) == {(1,2), (1,3), (2,1), (3,4), (5,2)}
+
+def test_play_10_rounds_with_large_example():
+    elves = fetch_data('sample_data/day23-large.txt')
+    field = Field(elves)
+    field.play(max_rounds=10)
+    assert len(field.elves) == 22
+    assert field.empty_ground() == 110
+
+def test_play_to_end_with_large_example():
+    elves = fetch_data('sample_data/day23-large.txt')
+    field = Field(elves)
+    rounds = field.play()
+    assert rounds == 20
 
 #-----------------------------------------------------#
 
 if __name__ == "__main__":
-    data = fetch_data('data/day23.txt')
-    print('Hello, World!')
+    elves = fetch_data('data/day23.txt')
+    field = Field(elves)
+    rounds = field.play(max_rounds=30)
+    print(rounds)

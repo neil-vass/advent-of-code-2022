@@ -13,9 +13,19 @@ class Field:
     def __init__(self, elves):
         self.elves = elves
 
-    def propose_move(self, elf):
+    direction_order = 'NSWE'
+
+    direction_checks = {
+        'N': {'N', 'NE', 'NW'},
+        'S': {'S', 'SE', 'SW'},
+        'W': {'W', 'NW', 'SW'},
+        'E': {'E', 'NE', 'SE'}
+    }
+    
+
+    def propose_move(self, elf, direction_idx):
         x,y = elf
-        directions = {
+        adjacent_positions = {
             'N': (x-1, y),
             'NE': (x-1, y+1),
             'E': (x, y+1),
@@ -26,33 +36,36 @@ class Field:
             'NW': (x-1, y-1)
         }
 
-        neighbours = {k for k,v in directions.items() if v in self.elves}
+        neighbours = {k for k,v in adjacent_positions.items() if v in self.elves}
 
         if len(neighbours): 
-            if {'N', 'NE', 'NW'}.isdisjoint(neighbours):
-                return directions['N']
-            if {'S', 'SE', 'SW'}.isdisjoint(neighbours):
-                return directions['S']
-            if {'W', 'NW', 'SW'}.isdisjoint(neighbours):
-                return directions['W']
-            if {'E', 'NE', 'SE'}.isdisjoint(neighbours):
-                return directions['E']
+            for _ in range(len(Field.direction_order)):
+                dir = Field.direction_order[direction_idx]
+                if neighbours.isdisjoint(Field.direction_checks[dir]):
+                    return adjacent_positions[dir]
+                    
+                direction_idx = (direction_idx + 1) % len(Field.direction_order)
         return elf
 
 
-    def play_round(self):
-        # Propose moves
-        proposals = [(elf, self.propose_move(elf)) for elf in self.elves]
+    def play(self, rounds):
+        first_direction = 0
+        for _ in range(rounds):
+            # Propose moves
+            proposals = [(elf, self.propose_move(elf, first_direction)) for elf in self.elves]
 
-        # Move
-        destinations = list(zip(*proposals))[1]
-        new_positions = []
-        for src, dest in proposals:
-            if destinations.count(dest) == 1:
-                new_positions.append(dest)
-            else:
-                new_positions.append(src)
-        self.elves = new_positions
+            # Move
+            destinations = list(zip(*proposals))[1]
+            new_positions = []
+            for src, dest in proposals:
+                if destinations.count(dest) == 1:
+                    new_positions.append(dest)
+                else:
+                    new_positions.append(src)
+            self.elves = new_positions
+
+            # Next time, consider from a new direction
+            first_direction = (first_direction + 1) % len(Field.direction_order)
 
 
 #--------------------- tests -------------------------#
@@ -65,8 +78,14 @@ def test_fetch_elves():
 def test_play_round():
     elves = fetch_data('sample_data/day23-small.txt')
     field = Field(elves)
-    field.play_round()
+    field.play(rounds=1)
     assert set(field.elves) == {(0,2), (0,3), (2,2), (3,3), (4,2)}
+
+def test_play_2_rounds_considers_new_direction():
+    elves = fetch_data('sample_data/day23-small.txt')
+    field = Field(elves)
+    field.play(rounds=2)
+    assert set(field.elves) == {(1,2), (1,3), (2,1), (3,4), (5,2)}
 
 #-----------------------------------------------------#
 

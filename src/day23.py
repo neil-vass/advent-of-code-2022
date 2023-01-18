@@ -1,3 +1,6 @@
+import cProfile
+
+
 def fetch_data(path):
     with open(path, 'r') as f:
         elves = []
@@ -113,8 +116,12 @@ def test_play_to_end_with_large_example():
 
 #-----------------------------------------------------#
 
-if __name__ == "__main__":
+def play():
     elves = fetch_data('data/day23.txt')
     field = Field(elves)
     rounds = field.play(max_rounds=30)
     print(rounds)
+
+if __name__ == "__main__":
+    cProfile.run('play()', sort='cumulative')
+    

@@ -37,16 +37,17 @@ class Elf:
             'W': (x, y-1),
             'NW': (x-1, y-1)
         }
+        self.adjacent_directions = {v:k for k,v in self.adjacent_positions.items()}
 
     def pos(self):
         return (self.x, self.y)
 
     def add_neighbour(self, elf):
-        dir = next(k for k,v in self.adjacent_positions.items() if v == elf.pos())
+        dir = self.adjacent_directions[elf.pos()]
         self.neighbours.add(dir)
 
     def remove_neighbour(self, elf):
-        dir = next(k for k,v in self.adjacent_positions.items() if v == elf.pos())
+        dir = self.adjacent_directions[elf.pos()]
         self.neighbours.remove(dir)
 
     def propose_move(self, direction_idx):

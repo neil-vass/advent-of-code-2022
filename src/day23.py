@@ -124,4 +124,20 @@ def play():
 
 if __name__ == "__main__":
     cProfile.run('play()', sort='cumulative')
+
+
+# Runs in 18.75 minutes, can we improve?
+# 22169768 function calls in 1125.186 seconds
+
+#    Ordered by: cumulative time
+
+#    ncalls  tottime  percall  cumtime  percall filename:lineno(function)
+#         1    0.000    0.000 1125.186 1125.186 {built-in method builtins.exec}
+#         1    0.000    0.000 1125.186 1125.186 <string>:1(<module>)
+#         1    0.000    0.000 1125.186 1125.186 day23.py:119(play)
+#         1    1.602    1.602 1125.183 1125.183 day23.py:53(play)
+#      1003    1.305    0.001 1000.396    0.997 day23.py:58(<listcomp>)
+#   2595764    5.451    0.000  999.091    0.000 day23.py:28(propose_move)
+#   2595764  992.575    0.000  992.575    0.000 day23.py:41(<setcomp>)
+#   2595764  123.019    0.000  123.019    0.000 {method 'count' of 'tuple' objects}
     

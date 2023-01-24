@@ -84,24 +84,26 @@ class Field:
                 break
             
             for elf, dest in moves:
-                # Delete this elf
+                # Delete this elf and re-add it in the right position
                 for dir in elf.neighbours:
-                    neighbour_pos = elf.adjacent_positions[dir]
-                    self.elves[neighbour_pos].remove_neighbour(elf)
+                    neighbour_elf = self.elves[elf.adjacent_positions[dir]]
+                    neighbour_elf.remove_neighbour(elf)
+                    if not neighbour_elf.neighbours:
+                        self.elves_with_neighbours.discard(neighbour_elf)
                 del self.elves[elf.pos()]
-                self.elves_with_neighbours.remove(elf)
-                
-                # New elf in right position
-                # WAIT
-                # We need to move them all _first_ then update neighbours
-                new_elf = Elf(dest)
-                for adj in new_elf.adjacent_positions:
+                self.elves_with_neighbours.discard(elf)
+                self.elves[dest] = Elf(dest)
+            
+            # Set neighbours for the moved elves!
+            for _, dest in moves:
+                moved_elf = self.elves[dest]
+                for adj in moved_elf.adjacent_positions.values():
                     adjacent_elf = self.elves.get(adj) 
                     if adjacent_elf:
-                        new_elf.add_neighbour(adjacent_elf)
-                        adjacent_elf.add_neighbour(new_elf)
-                        self.elves_with_neighbours.add(new_elf) 
-                    self.elves[dest] = new_elf
+                        moved_elf.add_neighbour(adjacent_elf)
+                        adjacent_elf.add_neighbour(moved_elf)
+                        self.elves_with_neighbours.add(moved_elf) 
+                        self.elves_with_neighbours.add(adjacent_elf)
 
             first_direction = (first_direction + 1) % len(Elf.direction_order)
             
@@ -109,13 +111,22 @@ class Field:
                 break
         return rounds
 
-
     def empty_ground(self):
-        x, y = zip(*self.elves)
+        x, y = zip(*self.elves.keys())
         area = (max(x) - min(x) + 1) * (max(y) - min(y) + 1)
         return area - len(self.elves)
 
+# max(x)
+# 8
+# min(x)
+# -2
+# max(y)
+# 9
+# min(y)
+# -2
 
+#[(1, 0), (-1, 4), (7, 1), (7, 4), (2, 8), (4, -2), (3, 0), (6, -1), (0, 7), (4, 7), (6, 7), (0, 2), (5, 3), (5, 5), (2, 6), (3, 6), (6, 2), (4, 4), (4, 3), (4, 2), (1, 4), (2, 4)]
+#[(-2, 4), (0, 1), (1, 3), (2, 6), (-1, 8), (0, -1), (0, 4), (2, 9), (2, 0), (3, 6), (5, 8), (3, -2), (4, 2), (4, 3), (3, 5), (5, -1), (6, 1), (6, 3), (6, 6), (8, 7), (8, 1), (8, 4)]
 #--------------------- tests -------------------------#
 
 def test_fetch_elves():
@@ -153,14 +164,17 @@ def test_play_to_end_with_large_example():
 def play():
     elves = fetch_data('data/day23.txt')
     field = Field(elves)
-    rounds = field.play(30)
+    rounds = field.play()
     print(rounds)
 
 if __name__ == "__main__":
     cProfile.run('play()', sort='cumulative')
 
 
+#-----------------------------------------------------#
+# First version:
 # Runs in 18.75 minutes, can we improve?
+
 # 22169768 function calls in 1125.186 seconds
 
 #    Ordered by: cumulative time
@@ -191,5 +205,44 @@ if __name__ == "__main__":
 #     77640   24.524    0.000   24.524    0.000 day23-faster.py:42(<setcomp>)
 #     77640    3.667    0.000    3.667    0.000 {method 'count' of 'tuple' objects}
 
-def test_this():
-    assert 1 == 1
+
+#-----------------------------------------------------#
+# Second version: 
+# Setting up neighbouring cells at start, and updating neighbours only when cells moved
+# 30 rounds has gone from 28s to 0.6s
+#          1897822 function calls (1897814 primitive calls) in 0.593 seconds
+
+#    Ordered by: cumulative time
+
+#    ncalls  tottime  percall  cumtime  percall filename:lineno(function)
+#         1    0.000    0.000    0.593    0.593 {built-in method builtins.exec}
+#         1    0.001    0.001    0.593    0.593 <string>:1(<module>)
+#         1    0.000    0.000    0.592    0.592 day23-faster.py:164(play)
+#         1    0.072    0.072    0.535    0.535 day23-faster.py:73(play)
+#        30    0.016    0.001    0.201    0.007 day23-faster.py:79(<listcomp>)
+#     74054    0.139    0.000    0.185    0.000 day23-faster.py:52(propose_move)
+#     60040    0.054    0.000    0.169    0.000 day23-faster.py:44(add_neighbour)
+#     78529    0.012    0.000    0.130    0.000 {built-in method builtins.next}
+#    120080    0.064    0.000    0.095    0.000 day23-faster.py:45(<genexpr>)
+#     18489    0.019    0.000    0.060    0.000 day23-faster.py:48(remove_neighbour)
+
+# Full thing runs in 19 seconds (a 60x speedup!)
+#          53747368 function calls (53747360 primitive calls) in 18.947 seconds
+
+#    Ordered by: cumulative time
+
+#    ncalls  tottime  percall  cumtime  percall filename:lineno(function)
+#         1    0.000    0.000   18.947   18.947 {built-in method builtins.exec}
+#         1    0.001    0.001   18.947   18.947 <string>:1(<module>)
+#         1    0.000    0.000   18.946   18.946 day23-faster.py:164(play)
+#         1    3.971    3.971   18.892   18.892 day23-faster.py:73(play)
+#   2176928    2.021    0.000    6.321    0.000 day23-faster.py:44(add_neighbour)
+#   2894507    0.466    0.000    4.992    0.000 {built-in method builtins.next}
+#   4353856    2.410    0.000    3.562    0.000 day23-faster.py:45(<genexpr>)
+#      1003    0.307    0.000    2.838    0.003 day23-faster.py:79(<listcomp>)
+#    717579    0.799    0.000    2.609    0.000 day23-faster.py:48(remove_neighbour)
+#   1268319    1.927    0.000    2.530    0.000 day23-faster.py:52(propose_move)
+#  13716053    1.661    0.000    1.661    0.000 day23-faster.py:41(pos)
+#    812404    0.325    0.000    1.536    0.000 day23-faster.py:23(__init__)
+#   1435158    0.968    0.000    1.368    0.000 day23-faster.py:49(<genexpr>)
+#    812404    1.211    0.000    1.211    0.000 day23-faster.py:27(set_position)

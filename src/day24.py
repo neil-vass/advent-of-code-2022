@@ -59,7 +59,6 @@ class Valley:
 
 
     def choices_at(self, pos, t):
-        # About to step to t+1. Ignore blizzards moving for now.
         for choice in self.adjacent_positions(pos):
             if self.will_be_clear(choice, t+1):
                     yield choice
@@ -114,7 +113,7 @@ def test_shortest_path():
 #-----------------------------------------------------#
 
 def shortest_path():
-    data = fetch_data('data/day24.txt')
+    data = fetch_data('sample_data/day24-complex.txt')
     valley = Valley(data)
     print(valley.shortest_path())
 

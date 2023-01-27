@@ -75,49 +75,6 @@ def test_create_valley():
     assert valley.entrance == (0,1)
     assert valley.exit == (6,5)
 
-def pos_at(width, initial, t, backwards=False):
-    if backwards: 
-        t = -t
-    return ((initial -1 + t) % width) +1
-
-def test_moving_blizzards_forwards():
-    row = '#.>....#'
-    width = 6 # clear area to move in
-    initial = row.index('>')
-    assert pos_at(width, initial, t=3) == 5
-    assert pos_at(width, initial, t=width) == initial
-    assert pos_at(width, initial, t=5) == 1
-
-
-def test_moving_blizzards_backwards():
-    row = '#.<....#'
-    width = 6 # clear area to move in
-    initial = row.index('<')
-    assert pos_at(width, initial, t=1, backwards=True) == 1
-    assert pos_at(width, initial, t=width, backwards=True) == initial
-    assert pos_at(width, initial, t=5, backwards=True) == 3
-
-def will_be_blocked(row, width, pos, t):
-    blizzard_will_move_right_from = ((pos -2 - t) % width) + 2
-    if row[blizzard_will_move_right_from] == '>':
-        return True
-    blizzard_will_move_left_from = ((pos -2 + t) % width) + 2
-    if row[blizzard_will_move_left_from] == '<':
-        return True
-    return False
-
-def test_check_if_blocked():
-    # The real question! I'm thinking of moving to a pos, will it be free?
-    row = '#.>....#'
-    width = 6 # clear area to move in
-    initial = row.index('>')
-    assert will_be_blocked(row, width, pos=5, t=3)
-    row = '#.<....#'
-    assert will_be_blocked(row, width, pos=5, t=3)
-    assert will_be_blocked(row, width, pos=5, t=1) == False
-  
-
-
 def test_choices_at_t_0():
     data = fetch_data('sample_data/day24.txt')
     valley = Valley(data)

@@ -30,6 +30,7 @@ class Valley:
         if pos.y < self.map.shape[1] -1:
             yield Pos(pos.x, pos.y+1)
         
+
     def will_be_clear(self, pos, t):
         if self.map[pos] == '#':
             return False
@@ -82,6 +83,13 @@ def test_choices_at_t_0():
     # Blizzard will move and we can also move down to (2,1).
     assert set(valley.choices_at(Pos(1,1), t=0)) == {(1,1), (0,1), (1,2), (2,1)}
 
+def test_choices_at_t_1():
+    data = fetch_data('sample_data/day24.txt')
+    valley = Valley(data)
+    # Can't stand still, a blizzard will wrap off the bottom and hit us.
+    assert set(valley.choices_at(Pos(1,4), t=1)) == {(1,3), (1,5), (2,4)}
+    # Standing to the right of that, can't move onto blizzard.
+    assert set(valley.choices_at(Pos(1,5), t=1)) == {(1,5), (2,5)}
 
 
 #-----------------------------------------------------#

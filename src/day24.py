@@ -22,6 +22,12 @@ class Valley:
         self.entrance = Pos(0, np.where(data[0] == '.')[0][0])
         self.exit = Pos(data.shape[0]-1, np.where(data[-1] == '.')[0][0])
 
+        self.futures = np.zeros((self.repeats_after+1, data.shape[0], data.shape[1]))
+        for t in range(self.repeats_after+1):
+            for x in range(data.shape[0]):
+                for y in range(data.shape[1]):
+                    self.futures[t,x,y] = self.will_be_clear(Pos(x,y), t)
+
     def adjacent_positions(self, pos):
         yield pos
         if pos.x > 0:
@@ -60,7 +66,8 @@ class Valley:
 
     def choices_at(self, pos, t):
         for choice in self.adjacent_positions(pos):
-            if self.will_be_clear(choice, t+1):
+            #if self.will_be_clear(choice, t+1):
+            if self.futures[t+1, choice.x, choice.y]:
                     yield choice
 
     def shortest_path(self):   
@@ -113,7 +120,8 @@ def test_shortest_path():
 #-----------------------------------------------------#
 
 def shortest_path():
-    data = fetch_data('sample_data/day24-complex.txt')
+    #data = fetch_data('sample_data/day24-complex.txt')
+    data = fetch_data('data/day24.txt')
     valley = Valley(data)
     print(valley.shortest_path())
 

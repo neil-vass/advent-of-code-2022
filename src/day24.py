@@ -22,11 +22,11 @@ class Valley:
         self.entrance = Pos(0, np.where(data[0] == '.')[0][0])
         self.exit = Pos(data.shape[0]-1, np.where(data[-1] == '.')[0][0])
 
-        self.futures = np.zeros((self.repeats_after+1, data.shape[0], data.shape[1]))
-        for t in range(self.repeats_after+1):
-            for x in range(data.shape[0]):
-                for y in range(data.shape[1]):
-                    self.futures[t,x,y] = self.will_be_clear(Pos(x,y), t)
+        # self.futures = np.zeros((self.repeats_after+1, data.shape[0], data.shape[1]))
+        # for t in range(self.repeats_after+1):
+        #     for x in range(data.shape[0]):
+        #         for y in range(data.shape[1]):
+        #             self.futures[t,x,y] = self.will_be_clear(Pos(x,y), t)
 
     def adjacent_positions(self, pos):
         yield pos
@@ -66,22 +66,23 @@ class Valley:
 
     def choices_at(self, pos, t):
         for choice in self.adjacent_positions(pos):
-            #if self.will_be_clear(choice, t+1):
-            if self.futures[t+1, choice.x, choice.y]:
+            if self.will_be_clear(choice, t+1):
+            #if self.futures[t+1, choice.x, choice.y]:
                     yield choice
 
     def shortest_path(self):   
         explored = {(self.entrance, 0)}
         queue = deque([(self.entrance, 0, 0)])
         while queue:
-            pos, t, path_length = queue.popleft()
+            pos, pattern, path_length = queue.popleft()
             if pos == self.exit:
                 return path_length
-            next_time = (t+1) % self.repeats_after
-            for neighbour in self.choices_at(pos, t):
-                if neighbour not in explored:
-                    explored.add((neighbour, t))
-                    queue.append((neighbour, next_time, path_length+1))
+            next_pattern = (path_length+1) % self.repeats_after
+            for neighbour in self.choices_at(pos, path_length):
+                if (neighbour, next_pattern) not in explored:
+                    explored.add((neighbour, next_pattern))
+                    queue.append((neighbour, next_pattern, path_length+1))
+        raise Exception('No path found')
 
 #--------------------- tests -------------------------#
 
@@ -113,17 +114,18 @@ def test_choices_at_t_1():
     assert set(valley.choices_at(Pos(1,5), t=1)) == {(1,5), (2,5)}
 
 def test_shortest_path():
-    data = fetch_data('sample_data/day24-complex.txt')
+    data = fetch_data('data/day24.txt')
+    #data = fetch_data('sample_data/day24-complex.txt')
     valley = Valley(data)
     assert valley.shortest_path() == 18
 
 #-----------------------------------------------------#
 
 def shortest_path():
-    #data = fetch_data('sample_data/day24-complex.txt')
     data = fetch_data('data/day24.txt')
     valley = Valley(data)
     print(valley.shortest_path())
 
 if __name__ == "__main__":
     cProfile.run('shortest_path()', sort='cumulative')
+    # 217 is too low

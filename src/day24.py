@@ -8,25 +8,35 @@ Pos = namedtuple("Pos", "x y")
 
 def fetch_data(path):
     with open(path, 'r') as f:
-        return np.array([[c for c in ln.rstrip()] for ln in f])
+        for ln in f:
+            yield ln.rstrip()
 
 def to_str(row):
     return ''.join(c if len(c) == 1 else len(c) for c in row)
 
 class Valley:
     def __init__(self, data):
-        self.map = data
-        self.height = data.shape[0] -2
-        self.width = data.shape[1] -2
+        self.map = np.array([[c for c in ln] for ln in data])
+        self.height = self.map.shape[0] -2
+        self.width = self.map.shape[1] -2
         self.repeats_after = math.lcm(self.height, self.width)
-        self.entrance = Pos(0, np.where(data[0] == '.')[0][0])
-        self.exit = Pos(data.shape[0]-1, np.where(data[-1] == '.')[0][0])
+        self.entrance = Pos(0, np.where(self.map[0] == '.')[0][0])
+        self.exit = Pos(self.map.shape[0]-1, np.where(self.map[-1] == '.')[0][0])
 
-        # self.futures = np.zeros((self.repeats_after+1, data.shape[0], data.shape[1]))
-        # for t in range(self.repeats_after+1):
-        #     for x in range(data.shape[0]):
-        #         for y in range(data.shape[1]):
-        #             self.futures[t,x,y] = self.will_be_clear(Pos(x,y), t)
+        self.futures = np.zeros((self.repeats_after+1, self.map.shape[0], self.map.shape[1]), dtype=bool)
+        for x in range(self.map.shape[0]):
+            for y in range(self.map.shape[1]):
+                if self.map[x,y] in '<>^v':
+                    for t in range(self.repeats_after+1):
+                        if self.map[x,y] == '<':
+                            self.futures[t, x, ((y -1 -t) % self.width +1)] = True
+                        elif self.map[x,y] == '>':
+                            self.futures[t, x, ((y -1 +t) % self.width +1)] = True
+                        elif self.map[x,y] == '^':
+                            self.futures[t, ((x -1 -t) % self.height +1), y] = True
+                        elif self.map[x,y] == 'v':
+                            self.futures[t, ((x -1 +t) % self.height +1), y] = True
+    
 
     def adjacent_positions(self, pos):
         yield pos
@@ -39,10 +49,13 @@ class Valley:
         if pos.y < self.map.shape[1] -1:
             yield Pos(pos.x, pos.y+1)
         
-
     def will_be_clear(self, pos, t):
         if self.map[pos] == '#':
             return False
+        # Check the map. Are there any blizzards that will hit pos at time t?
+        if self.futures[t, pos.x, pos.y]:
+            return False
+        return True
         
         # Check the map. Are there any blizzards that will hit pos at time t?
         right_bliz = ((pos.y -2 - t) % self.width) + 2
@@ -78,23 +91,21 @@ class Valley:
             if pos == self.exit:
                 return path_length
             next_pattern = (path_length+1) % self.repeats_after
-            for neighbour in self.choices_at(pos, path_length):
+            for neighbour in self.choices_at(pos, next_pattern-1):
                 if (neighbour, next_pattern) not in explored:
                     explored.add((neighbour, next_pattern))
                     queue.append((neighbour, next_pattern, path_length+1))
         raise Exception('No path found')
 
-#--------------------- tests -------------------------#
 
-def test_fetch_data():
-    data = fetch_data('sample_data/day24-simple.txt')
-    assert to_str(data[0]) == '#.#####'
-    assert data[2,1] == '>'
-    assert to_str(data[-1]) == '#####.#'
+#--------------------- tests -------------------------#
 
 def test_create_valley():
     data = fetch_data('sample_data/day24-simple.txt')
     valley = Valley(data)
+    assert to_str(valley.map[0]) == '#.#####'
+    assert valley.map[2,1] == '>'
+    assert to_str(valley.map[-1]) == '#####.#'
     assert valley.entrance == (0,1)
     assert valley.exit == (6,5)
 
@@ -113,9 +124,23 @@ def test_choices_at_t_1():
     # Standing to the right of that, can't move onto blizzard.
     assert set(valley.choices_at(Pos(1,5), t=1)) == {(1,5), (2,5)}
 
-def test_shortest_path():
+def test_edge_cases():
+    valley = Valley([
+        '#.###',
+        '#...#',
+        '#.>>#',
+        '###.#'])
+    assert valley.shortest_path() == 6
+
+def test_check_work():
     data = fetch_data('data/day24.txt')
-    #data = fetch_data('sample_data/day24-complex.txt')
+    valley = Valley(data)
+    assert valley.will_be_clear(Pos(9,25), t=4)
+    
+
+def test_shortest_path():
+    #data = fetch_data('data/day24.txt')
+    data = fetch_data('sample_data/day24-complex.txt')
     valley = Valley(data)
     assert valley.shortest_path() == 18
 

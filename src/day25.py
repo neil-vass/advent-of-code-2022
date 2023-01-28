@@ -3,12 +3,14 @@ def fetch_data(path):
         for ln in f:
             yield ln
 
+char_to_digit = {'0':0, '1':1, '2':2, '-':-1, '=':-2}
+digit_to_char = {v:k for k,v in char_to_digit.items()}
+
 def to_snafu(n):
-    return str(n)
+    return digit_to_char[n]
     
 
 def to_decimal(snafu):
-    char_to_digit = {'0':0, '1':1, '2':2, '-':-1, '=':-2}
     snafu = reversed(snafu)
     return sum(char_to_digit[n]*(5**idx) for idx, n in enumerate(snafu))
 

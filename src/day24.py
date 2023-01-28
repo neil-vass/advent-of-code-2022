@@ -48,49 +48,20 @@ class Valley:
             yield Pos(pos.x+1, pos.y)
         if pos.y < self.map.shape[1] -1:
             yield Pos(pos.x, pos.y+1)
-        
-    def will_be_clear(self, pos, t):
-        if self.map[pos] == '#':
-            return False
-        # Check the map. Are there any blizzards that will hit pos at time t?
-        if self.futures[t, pos.x, pos.y]:
-            return False
-        return True
-        
-        # Check the map. Are there any blizzards that will hit pos at time t?
-        right_bliz = ((pos.y -2 - t) % self.width) + 2
-        if self.map[pos.x, right_bliz] == '>':
-            return False
-
-        left_bliz = ((pos.y -2 + t) % self.width) + 2
-        if self.map[pos.x, left_bliz] == '<':
-            return False
-
-        down_bliz = ((pos.x -2 - t) % self.height) + 2
-        if self.map[down_bliz, pos.y] == 'v':
-            return False
-            
-        up_bliz = ((pos.x -2 + t) % self.height) + 2
-        if self.map[up_bliz, pos.y] == '^':
-            return False
-
-        return True
-
 
     def choices_at(self, pos, t):
         for choice in self.adjacent_positions(pos):
-            if self.will_be_clear(choice, t+1):
-            #if self.futures[t+1, choice.x, choice.y]:
+            if self.map[choice] != '#' and not self.futures[t+1, choice.x, choice.y]:
                     yield choice
 
-    def shortest_path(self):   
-        explored = {(self.entrance, 0)}
-        queue = deque([(self.entrance, 0, 0)])
+    def shortest_path(self, start, target, set_off_at=0):   
+        explored = {(start, set_off_at % self.repeats_after)}
+        queue = deque([(start, set_off_at % self.repeats_after, 0)])
         while queue:
             pos, pattern, path_length = queue.popleft()
-            if pos == self.exit:
+            if pos == target:
                 return path_length
-            next_pattern = (path_length+1) % self.repeats_after
+            next_pattern = (set_off_at + path_length+1) % self.repeats_after
             for neighbour in self.choices_at(pos, next_pattern-1):
                 if (neighbour, next_pattern) not in explored:
                     explored.add((neighbour, next_pattern))
@@ -124,33 +95,31 @@ def test_choices_at_t_1():
     # Standing to the right of that, can't move onto blizzard.
     assert set(valley.choices_at(Pos(1,5), t=1)) == {(1,5), (2,5)}
 
-def test_edge_cases():
-    valley = Valley([
-        '#.###',
-        '#...#',
-        '#.>>#',
-        '###.#'])
-    assert valley.shortest_path() == 6
-
-def test_check_work():
-    data = fetch_data('data/day24.txt')
-    valley = Valley(data)
-    assert valley.will_be_clear(Pos(9,25), t=4)
-    
-
 def test_shortest_path():
-    #data = fetch_data('data/day24.txt')
     data = fetch_data('sample_data/day24-complex.txt')
     valley = Valley(data)
-    assert valley.shortest_path() == 18
+    assert valley.shortest_path(valley.entrance, valley.exit) == 18
+
+def test_triple_trip():
+    data = fetch_data('sample_data/day24-complex.txt')
+    valley = Valley(data)
+    trip1 = valley.shortest_path(valley.entrance, valley.exit)
+    assert trip1 == 18
+    trip2 = valley.shortest_path(valley.exit, valley.entrance, set_off_at=trip1)
+    assert trip2 == 23
+    trip3 = valley.shortest_path(valley.entrance, valley.exit, set_off_at=trip1+trip2)
+    assert trip3 == 13
+
 
 #-----------------------------------------------------#
 
 def shortest_path():
     data = fetch_data('data/day24.txt')
     valley = Valley(data)
-    print(valley.shortest_path())
+    trip1 = valley.shortest_path(valley.entrance, valley.exit)
+    trip2 = valley.shortest_path(valley.exit, valley.entrance, set_off_at=trip1)
+    trip3 = valley.shortest_path(valley.entrance, valley.exit, set_off_at=trip1+trip2)
+    print(trip1+trip2+trip3)
 
 if __name__ == "__main__":
     cProfile.run('shortest_path()', sort='cumulative')
-    # 217 is too low
